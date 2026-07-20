@@ -47,31 +47,12 @@
             <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Bulog_2024.svg" alt="Bulog" class="w-full h-full object-contain">
         </div>
 
-        <a href="{{ route('public.assets.dashboard') }}"
-           class="floating-panel shadow-lg rounded-xl w-11 h-11 flex items-center justify-center text-slate-600 hover:text-orange-600 transition-colors flex-shrink-0"
-           title="Kembali ke Dashboard">
-            <span class="text-lg">&larr;</span>
-        </a>
-
         <button id="legend-toggle"
                 class="floating-panel shadow-lg rounded-xl px-3 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-white transition-colors flex-shrink-0">
             <span class="text-lg leading-none">🗂️</span>
             <span>Legenda &amp; Ringkasan</span>
         </button>
 
-        <span @class([
-            'floating-panel shadow-lg rounded-xl px-3 py-2.5 text-sm font-semibold flex-shrink-0',
-            'text-blue-700' => $tipeAset === 'KD List',
-            'text-purple-700' => $tipeAset !== 'KD List',
-        ])>
-            {{ $tipeAset }}
-        </span>
-
-        <a href="{{ $switchUrl }}"
-           class="floating-panel shadow-lg rounded-xl px-3 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-white transition-colors flex-shrink-0">
-            <span class="text-base leading-none">🔀</span>
-            <span>{{ $switchLabel }}</span>
-        </a>
     </div>
 
     {{-- Sidebar kiri: 3 kartu terpisah, ditumpuk mepet ke tepi kiri --}}
@@ -273,7 +254,7 @@
 
         // Batas wilayah Indonesia, dipakai supaya peta otomatis center di area yang
         // tidak ketutup panel legend (kiri) maupun panel analitik (kanan).
-        const indonesiaBounds = L.latLngBounds([-11.5, 93], [7, 141.5]);
+        const indonesiaBounds = L.latLngBounds([-11.5, 93], [128, 141.5]);
 
         function fitIndonesia() {
             layoutPanels();
