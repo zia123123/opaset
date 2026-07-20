@@ -47,12 +47,31 @@
             <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Bulog_2024.svg" alt="Bulog" class="w-full h-full object-contain">
         </div>
 
+        <a href="{{ route('public.assets.dashboard') }}"
+           class="floating-panel shadow-lg rounded-xl w-11 h-11 flex items-center justify-center text-slate-600 hover:text-orange-600 transition-colors flex-shrink-0"
+           title="Kembali ke Dashboard">
+            <span class="text-lg">&larr;</span>
+        </a>
+
         <button id="legend-toggle"
                 class="floating-panel shadow-lg rounded-xl px-3 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-white transition-colors flex-shrink-0">
             <span class="text-lg leading-none">🗂️</span>
             <span>Legenda &amp; Ringkasan</span>
         </button>
 
+        <span @class([
+            'floating-panel shadow-lg rounded-xl px-3 py-2.5 text-sm font-semibold flex-shrink-0',
+            'text-blue-700' => $tipeAset === 'KD List',
+            'text-purple-700' => $tipeAset !== 'KD List',
+        ])>
+            {{ $tipeAset }}
+        </span>
+
+        <a href="{{ $switchUrl }}"
+           class="floating-panel shadow-lg rounded-xl px-3 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-white transition-colors flex-shrink-0">
+            <span class="text-base leading-none">🔀</span>
+            <span>{{ $switchLabel }}</span>
+        </a>
     </div>
 
     {{-- Sidebar kiri: 3 kartu terpisah, ditumpuk mepet ke tepi kiri --}}
@@ -144,6 +163,19 @@
                 <ul id="donut-legend" class="flex-1 min-w-0 space-y-1 text-[11px]"></ul>
             </div>
             <p class="px-4 pb-3 text-[10px] text-slate-400">Otomatis menyesuaikan filter status, kategori, dan pencarian yang aktif.</p>
+        </div>
+
+        {{-- Kartu 3: Kategori Usaha — dihitung LIVE di browser dari titik yang
+             sedang tampil, ikut berubah kalau filter status/kategori/pencarian
+             diganti. Lihat fungsi updateUsahaPanel() di bagian script. --}}
+        <div class="floating-panel shadow-lg rounded-xl overflow-hidden">
+            <div class="bg-[#0F2A5C] px-4 py-2.5 flex items-center justify-between">
+                <h2 class="text-white text-xs font-semibold uppercase tracking-wide">Kategori Usaha</h2>
+                <span id="usaha-panel-total" class="text-[10px] text-white/70">-</span>
+            </div>
+            <div id="usaha-panel-list" class="divide-y divide-dashed divide-slate-100 max-h-64 overflow-y-auto scrollbar-thin">
+                <div class="px-4 py-6 text-center text-xs text-slate-400">Memuat data...</div>
+            </div>
         </div>
     </div>
 
@@ -241,10 +273,11 @@
 
         // Batas wilayah Indonesia, dipakai supaya peta otomatis center di area yang
         // tidak ketutup panel legend (kiri) maupun panel analitik (kanan).
-        const indonesiaBounds = L.latLngBounds([-11.5, 85], [17, 140.5]);
+        const indonesiaBounds = L.latLngBounds([-11.5, 93], [7, 141.5]);
 
         function fitIndonesia() {
-            const margin = 10;
+            layoutPanels();
+            const margin = 16;
 
             // Ukur lebar/tinggi panel yang sedang tampil secara nyata (bukan angka tebakan),
             // supaya Indonesia selalu center pas di area yang benar-benar kosong dari panel.
@@ -259,7 +292,7 @@
             const rm = rectOf('rm-panel');
 
             const leftPad = left ? left.right + margin : margin;
-            const topPad = left ? left.top : 50;
+            const topPad = left ? left.top : 70;
 
             const rightPad = Math.max(analytics ? analytics.width : 0, rm ? rm.width : 0) + margin;
             const bottomPad = rm ? (window.innerHeight - rm.top) + margin : margin;
@@ -274,7 +307,6 @@
                 map.setZoom(5);
             }
         }
-
         fitIndonesia();
         window.addEventListener('resize', fitIndonesia);
 
@@ -364,6 +396,50 @@
             }).join('') || '<li class="text-slate-400">Tidak ada data untuk filter ini.</li>';
         }
 
+        // Metadata (warna + icon) kategori Usaha dari backend, urutan tetap sesuai legenda resmi
+        const usahaMeta = {
+            @foreach ($usahaMetaList as $label => $meta)
+                "{{ $label }}": { color: "{{ $meta['color'] }}", icon: "{{ $meta['icon'] }}" },
+            @endforeach
+        };
+
+        // Panel "Kategori Usaha" — dihitung ulang tiap render() dari kontrak
+        // milik titik yang sedang tampil (ikut filter status/kategori/pencarian)
+        function updateUsahaPanel(points) {
+            const counts = {};
+            points.forEach(p => {
+                // Group by Sub Asset Code: 1 aset dihitung sekali saja untuk kategori
+                // usahanya, walau asetnya punya lebih dari satu kontrak.
+                const kontrakWithUsaha = (p.kontraks || []).find(k => k.usaha);
+                if (!kontrakWithUsaha) return;
+                counts[kontrakWithUsaha.usaha] = (counts[kontrakWithUsaha.usaha] || 0) + 1;
+            });
+
+            const total = Object.values(counts).reduce((a, b) => a + b, 0);
+            document.getElementById('usaha-panel-total').textContent = total.toLocaleString('id-ID') + ' unit';
+
+            // Urutan tetap sesuai legenda resmi dulu, baru kategori lain (kalau ada) diurutkan dari terbanyak
+            const knownLabels = Object.keys(usahaMeta).filter(l => counts[l]);
+            const extraLabels = Object.keys(counts)
+                .filter(l => !usahaMeta[l])
+                .sort((a, b) => counts[b] - counts[a]);
+            const labels = [...knownLabels, ...extraLabels];
+
+            const listEl = document.getElementById('usaha-panel-list');
+            listEl.innerHTML = labels.map(label => {
+                const meta = usahaMeta[label] || { color: '#64748B', icon: '📍' };
+                const count = counts[label];
+                const percent = total > 0 ? (count / total * 100).toFixed(1).replace('.', ',') : '0,0';
+                return `
+                    <div class="flex items-center gap-2.5 px-4 py-2">
+                        <span class="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0" style="background-color:${meta.color}">${meta.icon}</span>
+                        <span class="flex-1 min-w-0 text-xs font-medium text-slate-700 truncate">${label}</span>
+                        <span class="text-xs font-bold text-slate-800">${count}</span>
+                        <span class="w-12 text-right text-[10px] font-semibold" style="color:${meta.color}">${percent}%</span>
+                    </div>`;
+            }).join('') || '<div class="px-4 py-6 text-center text-xs text-slate-400">Tidak ada data untuk filter ini.</div>';
+        }
+
         function pinIcon(point) {
             const meta = metaFor(point.jenis_aset);
             const isIdle = point.status !== 'Terdayaguna';
@@ -434,6 +510,7 @@
             clusterGroup.addLayers(markers);
             updateStats(points);
             updateDonut(points);
+            updateUsahaPanel(points);
         }
 
         function updateStats(points) {

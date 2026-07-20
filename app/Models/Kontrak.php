@@ -15,6 +15,7 @@ class Kontrak extends Model
         'address',
         'nama_mitra_kerjasama',
         'jenis_usaha',
+        'usaha',
         'tanggal_penandatanganan_kontrak',
         'luas_tanah_kontrak',
         'luas_bangunan_kontrak',

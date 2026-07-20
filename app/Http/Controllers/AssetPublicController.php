@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asset;
+use App\Models\Kontrak;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -22,6 +23,71 @@ class AssetPublicController extends Controller
             'Wisma / GSG / Hotel' => ['no' => 5, 'color' => '#2563EB', 'icon' => '🏨'],
             'Kawasan Bisnis' => ['no' => 6, 'color' => '#991B1B', 'icon' => '💼'],
         ];
+    }
+
+    /**
+     * Icon & warna untuk kategori "Usaha" (kolom kontraks.usaha), dipakai di
+     * panel "Kategori Usaha" pada dashboard. Kalau ada nilai baru yang belum
+     * terdaftar di sini, tetap tampil pakai warna/icon default (fallback).
+     */
+    public static function usahaMeta(): array
+    {
+        return [
+            'Usaha Komersial' => ['color' => '#0F2A5C', 'icon' => '🏪'],
+            'Tempat Tinggal' => ['color' => '#16A34A', 'icon' => '🏠'],
+            'Kantor' => ['color' => '#2563EB', 'icon' => '🏢'],
+            'Sarana Olahraga' => ['color' => '#EA580C', 'icon' => '🏃'],
+            'Penyimpanan' => ['color' => '#7C3AED', 'icon' => '🚪'],
+            'GSG' => ['color' => '#CA8A04', 'icon' => '🏛️'],
+            'Pertanian' => ['color' => '#0D9488', 'icon' => '🌱'],
+            'Hotel' => ['color' => '#DB2777', 'icon' => '🏨'],
+            'Hub Pengiriman' => ['color' => '#0891B2', 'icon' => '🚚'],
+            'Penginapan' => ['color' => '#DC2626', 'icon' => '🛏️'],
+            'Peternakan' => ['color' => '#78350F', 'icon' => '🐄'],
+        ];
+    }
+
+    /**
+     * Palet warna siklik — dipakai untuk "Jenis Usaha" yang nilainya dinamis
+     * (bukan daftar tetap seperti "Usaha"), supaya tetap ada variasi warna.
+     */
+    protected static function paletteColor(int $index): string
+    {
+        $palette = ['#0F2A5C', '#DC2626', '#7C3AED', '#16A34A', '#EA580C', '#2563EB', '#CA8A04', '#0D9488', '#DB2777', '#0891B2', '#78350F', '#64748B'];
+
+        return $palette[$index % count($palette)];
+    }
+
+    /**
+     * Ringkasan "Jenis Usaha" (kolom kontraks.jenis_usaha), diurutkan dari
+     * yang terbanyak. Bisa discope ke satu tipe_aset (untuk halaman peta),
+     * atau semua data kalau $tipeAset null (untuk dashboard).
+     */
+    protected function jenisUsahaSummary(?string $tipeAset = null): array
+    {
+        $query = Kontrak::whereNotNull('jenis_usaha')->where('jenis_usaha', '!=', '');
+
+        if ($tipeAset !== null) {
+            $query->whereHas('asset', fn ($q) => $q->where('tipe_aset', $tipeAset));
+        }
+
+        $counts = $query->select('jenis_usaha', DB::raw('count(*) as total'))
+            ->groupBy('jenis_usaha')
+            ->orderByDesc('total')
+            ->get();
+
+        $total = (int) $counts->sum('total');
+
+        $summary = $counts->values()->map(function ($row, $i) use ($total) {
+            return [
+                'label' => $row->jenis_usaha,
+                'color' => self::paletteColor($i),
+                'count' => (int) $row->total,
+                'percent' => $total > 0 ? round($row->total / $total * 100, 1) : 0,
+            ];
+        });
+
+        return [$summary, $total];
     }
 
     /**
@@ -141,10 +207,16 @@ class AssetPublicController extends Controller
         $knownRm = $rmOrder;
         $otherRmTotal = (int) $rmCounts->whereNotIn('rm', $knownRm)->sum('total');
 
+        // Metadata kategori Usaha (warna + icon) untuk panel "Kategori Usaha" di peta.
+        // Datanya sendiri dihitung live di sisi browser dari titik yang sedang tampil
+        // (ikut berubah kalau filter status/kategori/pencarian diganti) — lihat map.blade.php.
+        $usahaMetaList = self::usahaMeta();
+
         $isNonKd = $tipeAset === 'Non KD List';
 
         return view('public.assets.map', compact(
-            'categoryData', 'otherTotal', 'totalTerdayaguna', 'totalIdle', 'rmSummary', 'otherRmTotal'
+            'categoryData', 'otherTotal', 'totalTerdayaguna', 'totalIdle', 'rmSummary', 'otherRmTotal',
+            'usahaMetaList'
         ) + [
             'tipeAset' => $tipeAset,
             'mapDataRoute' => $isNonKd ? 'public.assets.map-non-kd.data' : 'public.assets.map.data',
@@ -276,11 +348,38 @@ class AssetPublicController extends Controller
         }
         usort($regionSummary, fn ($a, $b) => strcmp($a['kedudukan'] ?? '', $b['kedudukan'] ?? ''));
 
+        // Ringkasan "Kategori Usaha" (kolom kontraks.usaha), diurutkan dari yang terbanyak
+        $usahaMeta = self::usahaMeta();
+        $usahaCounts = Kontrak::whereNotNull('usaha')
+            ->where('usaha', '!=', '')
+            ->select('usaha', DB::raw('count(*) as total'))
+            ->groupBy('usaha')
+            ->orderByDesc('total')
+            ->get();
+
+        $totalUsaha = (int) $usahaCounts->sum('total');
+        $usahaSummary = $usahaCounts->map(function ($row) use ($usahaMeta, $totalUsaha) {
+            $meta = $usahaMeta[$row->usaha] ?? ['color' => '#64748B', 'icon' => '📍'];
+            return [
+                'label' => $row->usaha,
+                'color' => $meta['color'],
+                'icon' => $meta['icon'],
+                'count' => (int) $row->total,
+                'percent' => $totalUsaha > 0 ? round($row->total / $totalUsaha * 100, 1) : 0,
+            ];
+        })->values();
+
+        [$jenisUsahaSummary, $totalJenisUsaha] = $this->jenisUsahaSummary();
+
         return view('public.assets.dashboard', [
             'total' => $total,
             'categorySummary' => $categorySummary,
             'regionSummary' => $regionSummary,
             'otherCount' => $otherCount,
+            'usahaSummary' => $usahaSummary,
+            'totalUsaha' => $totalUsaha,
+            'jenisUsahaSummary' => $jenisUsahaSummary,
+            'totalJenisUsaha' => $totalJenisUsaha,
             'updatePeriode' => 'Juni 2026',
         ]);
     }
