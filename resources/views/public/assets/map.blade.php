@@ -83,9 +83,9 @@
                     Status &middot; <span class="font-normal normal-case text-slate-400">pilih salah satu untuk menampilkan titik di peta</span>
                 </p>
                 <div class="inline-flex w-full rounded-lg border border-slate-200 p-1 bg-slate-50">
-                    <button type="button" data-status="Terdayaguna" class="status-btn active flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Terdayaguna</button>
+                    <button type="button" data-status="Terdayaguna" class="status-btn flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Terdayaguna</button>
                     <button type="button" data-status="Idle" class="status-btn flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Idle</button>
-                    <button type="button" data-status="__all__" class="status-btn flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Semua</button>
+                    <button type="button" data-status="__all__" class="status-btn active flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Semua</button>
                 </div>
             </div>
 
@@ -312,7 +312,7 @@
 
         // Batas wilayah Indonesia, dipakai supaya peta otomatis center di area yang
         // tidak ketutup panel legend (kiri) maupun panel analitik (kanan).
-        const indonesiaBounds = L.latLngBounds([-11.5, 93], [7, 141.5]);
+        const indonesiaBounds = L.latLngBounds([-3, 98], [7, 130.5]);
 
         function fitIndonesia() {
             layoutPanels();
