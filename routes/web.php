@@ -19,6 +19,7 @@ Route::name('public.assets.')->group(function () {
     Route::get('/peta/data', [AssetPublicController::class, 'mapData'])->name('map.data');
     Route::get('/peta-non-kd-list', [AssetPublicController::class, 'mapNonKd'])->name('map-non-kd');
     Route::get('/peta-non-kd-list/data', [AssetPublicController::class, 'mapDataNonKd'])->name('map-non-kd.data');
+    Route::get('/peta-provinsi', [AssetPublicController::class, 'mapProvinsi'])->name('map-provinsi');
     Route::get('/data-aset', [AssetPublicController::class, 'index'])->name('index');
     Route::get('/data-aset/{asset}', [AssetPublicController::class, 'show'])->name('show');
 });

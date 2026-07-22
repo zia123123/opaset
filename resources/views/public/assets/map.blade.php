@@ -47,16 +47,28 @@
             <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Bulog_2024.svg" alt="Bulog" class="w-full h-full object-contain">
         </div>
 
-        <button id="legend-toggle"
-                class="floating-panel shadow-lg rounded-xl px-3 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-white transition-colors flex-shrink-0">
-            <span class="text-lg leading-none">🗂️</span>
-            <span>Legenda &amp; Ringkasan</span>
+        <button id="hide-all-toggle"
+                class="floating-panel shadow-lg rounded-xl px-2.5 sm:px-3 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-white transition-colors flex-shrink-0">
+            <span id="hide-all-icon" class="leading-none flex items-center">
+                <!-- eye (tampil) -->
+                <svg id="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <!-- eye-off (sembunyi), default hidden -->
+                <svg id="icon-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden">
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <path d="M6.61 6.61A18.5 18.5 0 0 0 1 12s4 8 11 8a9.26 9.26 0 0 0 5.39-1.61"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+            </span>
+            <span class="hidden sm:inline" id="hide-all-label">Sembunyikan Semua Panel</span>
         </button>
 
     </div>
 
     {{-- Sidebar kiri: 3 kartu terpisah, ditumpuk mepet ke tepi kiri --}}
-    <div id="legend-panel" class="absolute top-20 left-4 z-[900] w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-100px)] overflow-y-auto scrollbar-thin space-y-3">
+    <div id="legend-panel" class="hideable-panel absolute top-20 left-4 z-[900] w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100vh-100px)] overflow-y-auto scrollbar-thin space-y-3">
 
         {{-- Kartu 1: Legend & Filter --}}
         <div class="floating-panel shadow-lg rounded-xl overflow-hidden">
@@ -161,7 +173,7 @@
     </div>
 
     {{-- Panel Ringkasan per RM, pojok kanan bawah --}}
-    <div id="rm-panel" class="absolute bottom-4 right-4 z-[900] floating-panel shadow-lg rounded-xl overflow-hidden w-80 max-w-[calc(100vw-2rem)]">
+    <div id="rm-panel" class="hideable-panel absolute bottom-4 right-4 z-[900] floating-panel shadow-lg rounded-xl overflow-hidden w-80 max-w-[calc(100vw-2rem)]">
         <div class="bg-[#0F2A5C] px-4 py-2.5">
             <h2 class="text-white text-xs font-semibold uppercase tracking-wide">Status Aset per RM &middot; Juni 2026 &middot; {{ $tipeAset }}</h2>
         </div>
@@ -172,13 +184,19 @@
                     <span class="flex-1 text-center text-emerald-600">Terdaya</span>
                     <span class="w-10 text-center">Idle</span>
                     <span class="w-10 text-right">Total</span>
+                    <span class="w-4"></span>
                 </div>
                 @foreach ($rmSummary as $row)
-                    <div class="flex items-center px-2.5 py-1.5 {{ !$loop->last ? 'border-b border-slate-100' : '' }}">
+                    <button type="button" data-rm-toggle="{{ $row['rm'] }}"
+                            class="rm-row w-full flex items-center px-2.5 py-1.5 border-b border-slate-100 hover:bg-slate-50 transition-colors text-left">
                         <span class="w-12 font-medium text-slate-700">{{ $row['rm'] }}</span>
                         <span class="flex-1 text-center text-emerald-600 font-semibold">{{ $row['terdayaguna'] }}</span>
                         <span class="w-10 text-center text-slate-400 font-semibold">{{ $row['idle'] }}</span>
                         <span class="w-10 text-right font-bold text-slate-700">{{ $row['total'] }}</span>
+                        <span class="w-4 text-slate-300 text-[10px] rm-row-chevron">▾</span>
+                    </button>
+                    <div data-rm-panel="{{ $row['rm'] }}" class="hidden max-h-44 overflow-y-auto scrollbar-thin border-b border-slate-100 bg-slate-50/60">
+                        <!-- diisi via JS -->
                     </div>
                 @endforeach
                 @if ($otherRmTotal > 0)
@@ -187,6 +205,7 @@
                         <span class="flex-1 text-center text-slate-300">-</span>
                         <span class="w-10 text-center text-slate-300">-</span>
                         <span class="w-10 text-right font-bold text-slate-700">{{ $otherRmTotal }}</span>
+                        <span class="w-4"></span>
                     </div>
                 @endif
                 <div class="flex items-center bg-[#0F2A5C] px-2.5 py-1.5">
@@ -194,13 +213,15 @@
                     <span class="flex-1 text-center text-emerald-300 font-bold">{{ $totalTerdayaguna }}</span>
                     <span class="w-10 text-center text-slate-300 font-bold">{{ $totalIdle }}</span>
                     <span class="w-10 text-right font-bold text-white">{{ $totalTerdayaguna + $totalIdle }}</span>
+                    <span class="w-4"></span>
                 </div>
             </div>
+            <p class="text-[10px] text-slate-400 mt-2">Klik salah satu baris RM untuk lihat daftar asetnya.</p>
         </div>
     </div>
 
     {{-- Panel analitik mengambang --}}
-    <div id="analytics-panel" class="absolute top-4 right-4 z-[900] floating-panel shadow-lg rounded-xl p-4 w-72 max-w-[calc(100vw-2rem)]">
+    <div id="analytics-panel" class="hideable-panel absolute top-4 right-4 z-[900] floating-panel shadow-lg rounded-xl p-4 w-72 max-w-[calc(100vw-2rem)]">
         <div class="grid grid-cols-2 gap-3">
             <div>
                 <p class="text-[9px] font-medium text-slate-400 uppercase tracking-wide">Aset Tampil</p>
@@ -235,10 +256,47 @@
         const map = L.map('map', { zoomControl: false });
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+        // Di layar mobile (<768px), panel Analitik & RM yang biasanya mengambang
+        // di pojok kanan-atas/kanan-bawah dipindah ikut masuk ke dalam sidebar
+        // Legend (jadi 1 kolom yang bisa di-scroll), supaya tidak saling tabrakan.
+        // Di layar desktop, keduanya dikembalikan ke posisi pojok masing-masing.
+        let isMobileLayout = null;
+        function applyResponsiveLayout() {
+            const mobile = window.innerWidth < 768;
+            if (mobile === isMobileLayout) return; // tidak ada perubahan, skip
+            isMobileLayout = mobile;
+
+            const legend = document.getElementById('legend-panel');
+            const analytics = document.getElementById('analytics-panel');
+            const rm = document.getElementById('rm-panel');
+            if (!legend || !analytics || !rm) return;
+
+            if (mobile) {
+                legend.appendChild(analytics);
+                legend.appendChild(rm);
+                [analytics, rm].forEach(el => {
+                    el.classList.remove('absolute', 'top-4', 'right-4', 'bottom-4', 'w-72', 'w-80');
+                    el.classList.add('w-full');
+                    el.style.maxWidth = 'none';
+                });
+            } else {
+                document.body.appendChild(analytics);
+                document.body.appendChild(rm);
+                analytics.classList.add('absolute', 'top-4', 'right-4', 'w-72');
+                analytics.classList.remove('w-full');
+                analytics.style.maxWidth = '';
+                rm.classList.add('absolute', 'bottom-4', 'right-4', 'w-80');
+                rm.classList.remove('w-full');
+                rm.style.maxWidth = '';
+            }
+        }
+
         // Posisikan sidebar legend persis di bawah top-bar (yang tingginya bisa berubah
         // kalau tombol-tombolnya wrap ke 2 baris di layar sempit), supaya tidak overlap
         // ataupun kepotong di bagian bawah layar.
         function layoutPanels() {
+            applyResponsiveLayout();
+
             const topBar = document.getElementById('top-bar');
             const legend = document.getElementById('legend-panel');
             if (!topBar || !legend) return;
@@ -254,7 +312,7 @@
 
         // Batas wilayah Indonesia, dipakai supaya peta otomatis center di area yang
         // tidak ketutup panel legend (kiri) maupun panel analitik (kanan).
-        const indonesiaBounds = L.latLngBounds([-11.5, 93], [128, 141.5]);
+        const indonesiaBounds = L.latLngBounds([-11.5, 93], [7, 141.5]);
 
         function fitIndonesia() {
             layoutPanels();
@@ -478,6 +536,9 @@
                         <div class="font-semibold text-slate-900 text-sm">${p.nama_aset}</div>
                         <div class="text-xs text-slate-500 mb-2">${p.kedudukan} &middot; ${p.rm}</div>
                         <div class="text-xs text-slate-600">Tanah ${formatNumber(p.luas_tanah)} m² &middot; Bangunan ${formatNumber(p.luas_bangunan)} m²</div>
+                        <div class="text-[10px] mt-1 ${p.is_precise ? 'text-emerald-600' : 'text-amber-500'}">
+                            ${p.is_precise ? '📍 Koordinat presisi (GPS)' : '〜 Koordinat perkiraan wilayah'}
+                        </div>
                         ${kontrakHtml}
                         <a href="${p.detail_url}" class="inline-block mt-3 text-xs font-medium text-orange-600 hover:underline">Lihat detail &rarr;</a>
                     </div>
@@ -520,14 +581,23 @@
             render(filtered);
         }
 
-        // Toggle panel legend on/off
-        const legendPanel = document.getElementById('legend-panel');
-        document.getElementById('legend-toggle').addEventListener('click', () => {
-            legendPanel.classList.toggle('hidden');
-            setTimeout(fitIndonesia, 50);
-        });
-        document.getElementById('legend-close').addEventListener('click', () => {
-            legendPanel.classList.add('hidden');
+
+        // Tombol master: sembunyikan/tampilkan SEMUA panel (legend, analitik, RM,
+        // badge tipe, tombol switch/infografis) sekaligus, biar tinggal peta saja.
+        let allPanelsHidden = false;
+        document.getElementById('hide-all-toggle').addEventListener('click', () => {
+            allPanelsHidden = !allPanelsHidden;
+
+            document.querySelectorAll('.hideable-panel').forEach(el => {
+                el.classList.toggle('hidden', allPanelsHidden);
+            });
+
+            document.getElementById('icon-eye').classList.toggle('hidden', allPanelsHidden);
+            document.getElementById('icon-eye-off').classList.toggle('hidden', !allPanelsHidden);
+            document.getElementById('hide-all-label').textContent = allPanelsHidden
+                ? 'Tampilkan Semua Panel'
+                : 'Sembunyikan Semua Panel';
+
             setTimeout(fitIndonesia, 50);
         });
 
@@ -552,6 +622,80 @@
         });
 
         document.getElementById('filter-search').addEventListener('input', applyFilter);
+
+        // Accordion per baris RM — klik baris untuk expand/collapse ringkasan per Kedudukan
+        function renderRmAssetList(rm) {
+            const items = allPoints.filter(p => p.rm === rm);
+
+            const counts = {};
+            items.forEach(p => {
+                const k = p.kedudukan || '(Tanpa Kedudukan)';
+                if (!counts[k]) counts[k] = { terdayaguna: 0, idle: 0 };
+                if (p.status === 'Terdayaguna') counts[k].terdayaguna++;
+                else counts[k].idle++;
+            });
+
+            const sorted = Object.entries(counts).sort((a, b) => (b[1].terdayaguna + b[1].idle) - (a[1].terdayaguna + a[1].idle));
+
+            return `
+                <div class="flex items-center px-3 py-1 text-[9px] font-semibold text-slate-400 uppercase tracking-wide bg-slate-100">
+                    <span class="flex-1 min-w-0">Kedudukan</span>
+                    <span class="w-8 text-center text-emerald-600">Terd</span>
+                    <span class="w-8 text-center text-slate-400">Idle</span>
+                    <span class="w-5"></span>
+                </div>
+            ` + sorted.map(([kedudukan, c]) => `
+                <div class="flex items-center gap-1 px-3 py-1.5 border-b border-slate-100 last:border-b-0">
+                    <span class="text-[11px] font-medium text-slate-700 truncate flex-1 min-w-0">${kedudukan}</span>
+                    <span class="w-8 text-center text-[11px] font-bold text-emerald-600">${c.terdayaguna}</span>
+                    <span class="w-8 text-center text-[11px] font-bold text-slate-400">${c.idle}</span>
+                    <button type="button" class="focus-kedudukan-btn flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-[10px] hover:bg-orange-100 transition-colors"
+                            data-kedudukan="${kedudukan}" title="Fokuskan peta ke ${kedudukan}">
+                        🎯
+                    </button>
+                </div>
+            `).join('') || '<div class="px-3 py-3 text-center text-[11px] text-slate-400">Tidak ada aset untuk RM ini.</div>';
+        }
+
+        // Fokuskan/zoom peta ke sebaran titik pada kedudukan tertentu
+        function focusMapOnKedudukan(kedudukan) {
+            const points = allPoints.filter(p => p.kedudukan === kedudukan);
+            if (points.length === 0) return;
+
+            if (points.length === 1) {
+                map.flyTo([points[0].lat, points[0].lng], 14, { duration: 0.8 });
+            } else {
+                const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
+                map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 14, duration: 0.8 });
+            }
+        }
+
+        // Event delegation, supaya tombol yang dibuat dinamis (hasil innerHTML) tetap kepencet
+        document.getElementById('rm-panel').addEventListener('click', (e) => {
+            const btn = e.target.closest('.focus-kedudukan-btn');
+            if (!btn) return;
+            e.stopPropagation(); // biar tidak ikut toggle accordion RM-nya
+            focusMapOnKedudukan(btn.dataset.kedudukan);
+        });
+
+        document.querySelectorAll('.rm-row').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const rm = btn.dataset.rmToggle;
+                const panel = document.querySelector(`[data-rm-panel="${rm}"]`);
+                const chevron = btn.querySelector('.rm-row-chevron');
+                const isOpen = !panel.classList.contains('hidden');
+
+                // Tutup semua panel lain dulu (biar cuma 1 yang kebuka)
+                document.querySelectorAll('[data-rm-panel]').forEach(p => p.classList.add('hidden'));
+                document.querySelectorAll('.rm-row-chevron').forEach(c => c.textContent = '▾');
+
+                if (!isOpen) {
+                    panel.innerHTML = renderRmAssetList(rm);
+                    panel.classList.remove('hidden');
+                    chevron.textContent = '▴';
+                }
+            });
+        });
 
         fetch('{{ route($mapDataRoute) }}')
             .then(res => res.json())

@@ -22,12 +22,16 @@ class Asset extends Model
         'luas_bangunan',
         'status',
         'tipe_aset',
+        'latitude',
+        'longitude',
     ];
 
     protected $casts = [
         'no_urut' => 'integer',
         'luas_tanah' => 'decimal:2',
         'luas_bangunan' => 'decimal:2',
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
     ];
 
     public function kontraks(): HasMany

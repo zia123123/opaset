@@ -16,12 +16,12 @@ class AssetPublicController extends Controller
     public static function categories(): array
     {
         return [
-            'Rumah Perusahaan' => ['no' => 1, 'color' => '#DC2626', 'icon' => '🏠'],
-            'Gedung / Ruang' => ['no' => 2, 'color' => '#7C3AED', 'icon' => '🏢'],
-            'Lahan Kosong' => ['no' => 3, 'color' => '#16A34A', 'icon' => '🍀'],
-            'Gudang' => ['no' => 4, 'color' => '#C2410C', 'icon' => '📦'],
-            'Wisma / GSG / Hotel' => ['no' => 5, 'color' => '#2563EB', 'icon' => '🏨'],
-            'Kawasan Bisnis' => ['no' => 6, 'color' => '#991B1B', 'icon' => '💼'],
+            'Rumah Perusahaan' => ['no' => 1, 'color' => '#DC2626', 'icon' => '🏠', 'code' => 'RP'],
+            'Gedung / Ruang' => ['no' => 2, 'color' => '#7C3AED', 'icon' => '🏢', 'code' => 'GR'],
+            'Lahan Kosong' => ['no' => 3, 'color' => '#16A34A', 'icon' => '🍀', 'code' => 'LK'],
+            'Gudang' => ['no' => 4, 'color' => '#C2410C', 'icon' => '📦', 'code' => 'GU'],
+            'Wisma / GSG / Hotel' => ['no' => 5, 'color' => '#2563EB', 'icon' => '🏨', 'code' => 'WG'],
+            'Kawasan Bisnis' => ['no' => 6, 'color' => '#991B1B', 'icon' => '💼', 'code' => 'KB'],
         ];
     }
 
@@ -259,14 +259,19 @@ class AssetPublicController extends Controller
             }])->get();
 
         return $assets->map(function (Asset $asset) use ($coords, $fallback) {
-            $base = $coords[strtoupper((string) $asset->kedudukan)] ?? $fallback;
+            if ($asset->latitude !== null && $asset->longitude !== null) {
+                // Koordinat presisi dari data survey/GPS lapangan (dicocokkan lewat Asset Code)
+                $lat = (float) $asset->latitude;
+                $lng = (float) $asset->longitude;
+            } else {
+                // Fallback: posisi acak-tapi-konsisten di sekitar wilayah "Kedudukan"-nya,
+                // untuk aset yang belum ada koordinat presisinya.
+                $base = $coords[strtoupper((string) $asset->kedudukan)] ?? $fallback;
 
-            // Seed dari sub_asset_code supaya posisi random-nya konsisten setiap kali diakses.
-            // Radius kecil (~±0.12 derajat, ±13km) supaya titik tetap berada di area kota,
-            // tidak melenceng jauh sampai ke laut.
-            mt_srand(crc32($asset->sub_asset_code));
-            $lat = $base[0] + (mt_rand(-120, 120) / 1000);
-            $lng = $base[1] + (mt_rand(-120, 120) / 1000);
+                mt_srand(crc32($asset->sub_asset_code));
+                $lat = $base[0] + (mt_rand(-120, 120) / 1000);
+                $lng = $base[1] + (mt_rand(-120, 120) / 1000);
+            }
 
             $kontraks = $asset->kontraks->map(fn ($k) => [
                 'nama_mitra_kerjasama' => $k->nama_mitra_kerjasama,
@@ -287,12 +292,71 @@ class AssetPublicController extends Controller
                 'status' => $asset->status,
                 'luas_tanah' => $asset->luas_tanah,
                 'luas_bangunan' => $asset->luas_bangunan,
+                'is_precise' => $asset->latitude !== null && $asset->longitude !== null,
                 'lat' => $lat,
                 'lng' => $lng,
                 'kontraks' => $kontraks,
                 'detail_url' => route('public.assets.show', $asset),
             ];
         });
+    }
+
+    /**
+     * Halaman peta gaya infografis: 1 titik per Kedudukan/wilayah, dengan
+     * label box selalu terbuka (bukan hover/klik) menampilkan total aset
+     * terdayaguna beserta breakdown 6 kategori — meniru desain infografis resmi.
+     */
+    public function mapProvinsi(): View
+    {
+        $categories = self::categories();
+
+        $rows = Asset::where('status', 'Terdayaguna')
+            ->select('kedudukan', 'jenis_aset', DB::raw('count(*) as total'))
+            ->groupBy('kedudukan', 'jenis_aset')
+            ->get()
+            ->groupBy('kedudukan');
+
+        $coordsConfig = config('kedudukan_map');
+
+        $regionSummary = [];
+        foreach ($rows as $kedudukan => $items) {
+            if (! $kedudukan) {
+                continue;
+            }
+
+            $counts = [];
+            $regionTotal = 0;
+            foreach ($categories as $label => $meta) {
+                $count = (int) optional($items->firstWhere('jenis_aset', $label))->total;
+                $counts[] = $count;
+                $regionTotal += $count;
+            }
+
+            $coord = $coordsConfig[strtoupper($kedudukan)] ?? null;
+
+            if (! $coord) {
+                continue; // skip kalau belum ada titik koordinat wilayahnya
+            }
+
+            $regionSummary[] = [
+                'kedudukan' => $kedudukan,
+                'total' => $regionTotal,
+                'counts' => $counts,
+                'lat' => $coord[0],
+                'lng' => $coord[1],
+            ];
+        }
+
+        usort($regionSummary, fn ($a, $b) => $b['total'] <=> $a['total']);
+
+        $total = (int) collect($regionSummary)->sum('total');
+
+        return view('public.assets.map-provinsi', [
+            'categoryList' => $categories,
+            'regionSummary' => $regionSummary,
+            'total' => $total,
+            'updatePeriode' => 'Juni 2026',
+        ]);
     }
 
     /**
