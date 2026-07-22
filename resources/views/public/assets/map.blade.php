@@ -83,9 +83,9 @@
                     Status &middot; <span class="font-normal normal-case text-slate-400">pilih salah satu untuk menampilkan titik di peta</span>
                 </p>
                 <div class="inline-flex w-full rounded-lg border border-slate-200 p-1 bg-slate-50">
-                    <button type="button" data-status="Terdayaguna" class="status-btn flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Terdayaguna</button>
+                    <button type="button" data-status="Terdayaguna" class="status-btn active flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Terdayaguna</button>
                     <button type="button" data-status="Idle" class="status-btn flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Idle</button>
-                    <button type="button" data-status="__all__" class="status-btn active flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Semua</button>
+                    <button type="button" data-status="__all__" class="status-btn flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Semua</button>
                 </div>
             </div>
 
@@ -584,9 +584,12 @@
 
         // Tombol master: sembunyikan/tampilkan SEMUA panel (legend, analitik, RM,
         // badge tipe, tombol switch/infografis) sekaligus, biar tinggal peta saja.
+        // Default-nya: di layar mobile (<768px) otomatis disembunyikan duluan,
+        // di desktop tetap tampil seperti biasa.
         let allPanelsHidden = false;
-        document.getElementById('hide-all-toggle').addEventListener('click', () => {
-            allPanelsHidden = !allPanelsHidden;
+
+        function setPanelsHidden(hidden) {
+            allPanelsHidden = hidden;
 
             document.querySelectorAll('.hideable-panel').forEach(el => {
                 el.classList.toggle('hidden', allPanelsHidden);
@@ -597,9 +600,18 @@
             document.getElementById('hide-all-label').textContent = allPanelsHidden
                 ? 'Tampilkan Semua Panel'
                 : 'Sembunyikan Semua Panel';
+        }
 
+        document.getElementById('hide-all-toggle').addEventListener('click', () => {
+            setPanelsHidden(!allPanelsHidden);
             setTimeout(fitIndonesia, 50);
         });
+
+        // Auto-hide sekali saja saat pertama kali dibuka di layar mobile
+        if (window.innerWidth < 768) {
+            setPanelsHidden(true);
+            setTimeout(fitIndonesia, 50);
+        }
 
         // Toggle per-kategori on/off
         document.querySelectorAll('.cat-checkbox').forEach(cb => {
