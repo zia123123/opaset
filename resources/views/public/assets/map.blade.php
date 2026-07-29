@@ -103,9 +103,9 @@
                     Status &middot; <span class="font-normal normal-case text-slate-400">pilih salah satu untuk menampilkan titik di peta</span>
                 </p>
                 <div class="inline-flex w-full rounded-lg border border-slate-200 p-1 bg-slate-50">
-                    <button type="button" data-status="Terdayaguna" class="status-btn flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Terdayaguna</button>
+                    <button type="button" data-status="Terdayaguna" class="status-btn active flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Terdayaguna</button>
                     <button type="button" data-status="Idle" class="status-btn flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Idle</button>
-                    <button type="button" data-status="__all__" class="status-btn active flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Semua</button>
+                    <button type="button" data-status="__all__" class="status-btn flex-1 px-2 py-1.5 text-xs font-medium rounded-md">Semua</button>
                 </div>
             </div>
 
@@ -214,12 +214,12 @@
                     <span class="w-4"></span>
                 </div>
                 @foreach ($rmSummary as $row)
-                    <button type="button" data-rm-toggle="{{ $row['rm'] }}"
+                    <button type="button" data-rm-toggle="{{ $row['rm'] }}" data-rm-summary-row="{{ $row['rm'] }}"
                             class="rm-row w-full flex items-center px-2.5 py-1.5 border-b border-slate-100 hover:bg-slate-50 transition-colors text-left">
                         <span class="w-12 font-medium text-slate-700">{{ $row['rm'] }}</span>
-                        <span class="flex-1 text-center text-emerald-600 font-semibold">{{ $row['terdayaguna'] }}</span>
-                        <span class="w-10 text-center text-slate-400 font-semibold">{{ $row['idle'] }}</span>
-                        <span class="w-10 text-right font-bold text-slate-700">{{ $row['total'] }}</span>
+                        <span class="flex-1 text-center text-emerald-600 font-semibold rm-count-terdaya">{{ $row['terdayaguna'] }}</span>
+                        <span class="w-10 text-center text-slate-400 font-semibold rm-count-idle">{{ $row['idle'] }}</span>
+                        <span class="w-10 text-right font-bold text-slate-700 rm-count-total">{{ $row['total'] }}</span>
                         <span class="w-4 text-slate-300 text-[10px] rm-row-chevron">▾</span>
                     </button>
                     <div data-rm-panel="{{ $row['rm'] }}" class="hidden max-h-44 overflow-y-auto scrollbar-thin border-b border-slate-100 bg-slate-50/60">
@@ -227,19 +227,19 @@
                     </div>
                 @endforeach
                 @if ($otherRmTotal > 0)
-                    <div class="flex items-center px-2.5 py-1.5 border-b border-slate-100">
+                    <div class="flex items-center px-2.5 py-1.5 border-b border-slate-100" data-rm-summary-row="__other__">
                         <span class="w-12 font-medium text-slate-700">Lainnya</span>
-                        <span class="flex-1 text-center text-slate-300">-</span>
-                        <span class="w-10 text-center text-slate-300">-</span>
-                        <span class="w-10 text-right font-bold text-slate-700">{{ $otherRmTotal }}</span>
+                        <span class="flex-1 text-center text-slate-400 font-semibold rm-count-terdaya">0</span>
+                        <span class="w-10 text-center text-slate-400 font-semibold rm-count-idle">0</span>
+                        <span class="w-10 text-right font-bold text-slate-700 rm-count-total">{{ $otherRmTotal }}</span>
                         <span class="w-4"></span>
                     </div>
                 @endif
                 <div class="flex items-center bg-[#0F2A5C] px-2.5 py-1.5">
                     <span class="w-12 font-semibold text-white">Total</span>
-                    <span class="flex-1 text-center text-emerald-300 font-bold">{{ $totalTerdayaguna }}</span>
-                    <span class="w-10 text-center text-slate-300 font-bold">{{ $totalIdle }}</span>
-                    <span class="w-10 text-right font-bold text-white">{{ $totalTerdayaguna + $totalIdle }}</span>
+                    <span class="flex-1 text-center text-emerald-300 font-bold" id="rm-footer-terdaya">{{ $totalTerdayaguna }}</span>
+                    <span class="w-10 text-center text-slate-300 font-bold" id="rm-footer-idle">{{ $totalIdle }}</span>
+                    <span class="w-10 text-right font-bold text-white" id="rm-footer-total">{{ $totalTerdayaguna + $totalIdle }}</span>
                     <span class="w-4"></span>
                 </div>
             </div>
@@ -613,19 +613,63 @@
             document.getElementById('stat-nilai-kontrak').textContent = formatRupiah(totalNilaiKontrak);
         }
 
-        function applyFilter() {
+        // "Filter global" = status, kategori, search (dari kartu Legenda & Filter).
+        // "Filter wilayah" = RM/Kedudukan (dari panel Status per RM, lihat di bawah).
+        // Dipisah supaya panel Status per RM bisa ikut filter global tanpa ke-nol-in
+        // dirinya sendiri pas salah satu barisnya diklik buat filter wilayah.
+        function matchesGlobalFilters(p) {
             const q = document.getElementById('filter-search').value.toLowerCase();
+            const matchSearch = !q || p.nama_aset.toLowerCase().includes(q) || (p.kedudukan ?? '').toLowerCase().includes(q);
+            const matchStatus = currentStatus === '__all__' || p.status === currentStatus;
+            const matchCategory = activeCategories.has(categoryKeyFor(p.jenis_aset));
+            return matchSearch && matchStatus && matchCategory;
+        }
 
+        function applyFilter() {
             const filtered = allPoints.filter(p => {
-                const matchSearch = !q || p.nama_aset.toLowerCase().includes(q) || (p.kedudukan ?? '').toLowerCase().includes(q);
-                const matchStatus = currentStatus === '__all__' || p.status === currentStatus;
-                const matchCategory = activeCategories.has(categoryKeyFor(p.jenis_aset));
                 const matchRm = !currentRmFilter || p.rm === currentRmFilter;
                 const matchKedudukan = !currentKedudukanFilter || p.kedudukan === currentKedudukanFilter;
-                return matchSearch && matchStatus && matchCategory && matchRm && matchKedudukan;
+                return matchesGlobalFilters(p) && matchRm && matchKedudukan;
             });
 
             render(filtered);
+            updateRmSummary();
+        }
+
+        // Panel "Status Aset per RM" — angka per baris RM dihitung dari titik yang
+        // lolos filter GLOBAL saja (status/kategori/search), TIDAK ikut ke-nol-in
+        // oleh filter wilayah (RM/Kedudukan) yang lagi aktif, supaya tetap bisa
+        // dipakai buat lihat/pindah ke RM lain sambil filter status/kategori aktif.
+        const knownRmLabels = @json(array_column($rmSummary, 'rm'));
+
+        function updateRmSummary() {
+            const points = allPoints.filter(matchesGlobalFilters);
+
+            knownRmLabels.forEach(rm => {
+                const row = document.querySelector(`[data-rm-summary-row="${CSS.escape(rm)}"]`);
+                if (!row) return;
+                const terdaya = points.filter(p => p.rm === rm && p.status === 'Terdayaguna').length;
+                const idle = points.filter(p => p.rm === rm && p.status !== 'Terdayaguna').length;
+                row.querySelector('.rm-count-terdaya').textContent = terdaya;
+                row.querySelector('.rm-count-idle').textContent = idle;
+                row.querySelector('.rm-count-total').textContent = terdaya + idle;
+            });
+
+            const otherRow = document.querySelector('[data-rm-summary-row="__other__"]');
+            if (otherRow) {
+                const otherPoints = points.filter(p => !knownRmLabels.includes(p.rm));
+                const terdaya = otherPoints.filter(p => p.status === 'Terdayaguna').length;
+                const idle = otherPoints.length - terdaya;
+                otherRow.querySelector('.rm-count-terdaya').textContent = terdaya;
+                otherRow.querySelector('.rm-count-idle').textContent = idle;
+                otherRow.querySelector('.rm-count-total').textContent = otherPoints.length;
+            }
+
+            const footerTerdaya = points.filter(p => p.status === 'Terdayaguna').length;
+            const footerIdle = points.length - footerTerdaya;
+            document.getElementById('rm-footer-terdaya').textContent = footerTerdaya;
+            document.getElementById('rm-footer-idle').textContent = footerIdle;
+            document.getElementById('rm-footer-total').textContent = points.length;
         }
 
         // Tombol master: sembunyikan/tampilkan SEMUA panel
@@ -727,7 +771,7 @@
         }
 
         function renderRmAssetList(rm) {
-            const items = allPoints.filter(p => p.rm === rm);
+            const items = allPoints.filter(matchesGlobalFilters).filter(p => p.rm === rm);
 
             const counts = {};
             items.forEach(p => {
@@ -818,7 +862,8 @@
             .then(res => res.json())
             .then(data => {
                 allPoints = data;
-                render(allPoints);
+                render(allPoints.filter(matchesGlobalFilters));
+                updateRmSummary();
                 document.getElementById('map-loading').remove();
             });
     </script>
