@@ -156,6 +156,14 @@
                             <dd class="text-slate-700">{{ $kontrak->address ?? '-' }}</dd>
                         </div>
                         <div>
+                            <dt class="text-slate-400 text-xs">Luas Tanah (Kontrak)</dt>
+                            <dd class="text-slate-700">{{ $kontrak->luas_tanah_kontrak ? number_format($kontrak->luas_tanah_kontrak, 0, ',', '.') . ' m²' : '-' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-slate-400 text-xs">Luas Bangunan (Kontrak)</dt>
+                            <dd class="text-slate-700">{{ $kontrak->luas_bangunan_kontrak ? number_format($kontrak->luas_bangunan_kontrak, 0, ',', '.') . ' m²' : '-' }}</dd>
+                        </div>
+                        <div>
                             <dt class="text-slate-400 text-xs">Nilai Kontrak</dt>
                             <dd class="text-emerald-600 font-semibold">Rp {{ number_format($kontrak->nilai_kontrak ?? 0, 0, ',', '.') }}</dd>
                         </div>

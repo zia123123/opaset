@@ -277,6 +277,8 @@ class AssetPublicController extends Controller
                 'nama_mitra_kerjasama' => $k->nama_mitra_kerjasama,
                 'jenis_usaha' => $k->jenis_usaha,
                 'usaha' => $k->usaha,
+                'luas_tanah_kontrak' => $k->luas_tanah_kontrak,
+                'luas_bangunan_kontrak' => $k->luas_bangunan_kontrak,
                 'nilai_kontrak' => $k->nilai_kontrak,
                 'masa_kerjasama' => $k->masa_kerjasama,
                 'tanggal_mulai_kerjasama' => optional($k->tanggal_mulai_kerjasama)->format('d M Y'),

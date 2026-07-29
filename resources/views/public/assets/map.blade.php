@@ -560,6 +560,7 @@
                     <div class="mt-2 pt-2 border-t border-slate-100 text-xs text-slate-600">
                         <div class="font-medium text-slate-800">${k.nama_mitra_kerjasama ?? '-'}</div>
                         <div>${k.usaha ?? '-'} &middot; ${k.jenis_usaha ?? '-'}</div>
+                        <div>Tanah ${formatNumber(k.luas_tanah_kontrak)} m² &middot; Bangunan ${formatNumber(k.luas_bangunan_kontrak)} m²</div>
                         <div>${formatRupiah(k.nilai_kontrak)}</div>
                         <div class="text-slate-400">${k.tanggal_mulai_kerjasama ?? '-'} s/d ${k.tanggal_berakhir_kerjasama ?? '-'}</div>
                     </div>
