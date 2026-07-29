@@ -32,6 +32,7 @@
         .cat-row.disabled { opacity: .35; }
         .status-btn { color: #64748B; }
         .status-btn.active { background: #0F2A5C; color: #fff; }
+        .rm-row.active-filter { background: #FFF7ED; }
         .scrollbar-thin::-webkit-scrollbar { width: 5px; }
         .scrollbar-thin::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 999px; }
     </style>
@@ -41,7 +42,7 @@
     {{-- Peta full-page --}}
     <div id="map"></div>
 
-    {{-- Baris tombol atas: logo, back, toggle legend — flex-wrap biar tidak numpuk di layar sempit --}}
+    {{-- Baris tombol atas: logo, hide-all, switch KD/Non-KD, infografis --}}
     <div id="top-bar" class="absolute top-4 left-4 right-4 z-[900] flex items-center gap-2 flex-wrap">
         <div class="floating-panel shadow-lg rounded-xl w-11 h-11 flex items-center justify-center p-2 flex-shrink-0">
             <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Bulog_2024.svg" alt="Bulog" class="w-full h-full object-contain">
@@ -50,12 +51,10 @@
         <button id="hide-all-toggle"
                 class="floating-panel shadow-lg rounded-xl px-2.5 sm:px-3 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-white transition-colors flex-shrink-0">
             <span id="hide-all-icon" class="leading-none flex items-center">
-                <!-- eye (tampil) -->
                 <svg id="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/>
                     <circle cx="12" cy="12" r="3"/>
                 </svg>
-                <!-- eye-off (sembunyi), default hidden -->
                 <svg id="icon-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden">
                     <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
                     <path d="M6.61 6.61A18.5 18.5 0 0 0 1 12s4 8 11 8a9.26 9.26 0 0 0 5.39-1.61"/>
@@ -65,6 +64,27 @@
             <span class="hidden sm:inline" id="hide-all-label">Sembunyikan Semua Panel</span>
         </button>
 
+        <span @class([
+            'hideable-panel floating-panel shadow-lg rounded-xl px-2.5 sm:px-3 py-2.5 text-sm font-semibold flex-shrink-0',
+            'text-blue-700' => $tipeAset === 'KD List',
+            'text-purple-700' => $tipeAset !== 'KD List',
+        ])>
+            {{ $tipeAset }}
+        </span>
+
+        <a href="{{ $switchUrl }}"
+           class="hideable-panel floating-panel shadow-lg rounded-xl px-2.5 sm:px-3 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-white transition-colors flex-shrink-0">
+            <span class="text-base leading-none">🔀</span>
+            <span class="hidden sm:inline">{{ $switchLabel }}</span>
+        </a>
+
+        @if ($tipeAset === 'KD List')
+            <a href="{{ route('public.assets.map-provinsi') }}"
+               class="hideable-panel floating-panel shadow-lg rounded-xl px-2.5 sm:px-3 py-2.5 flex items-center gap-2 text-sm font-medium text-slate-700 hover:bg-white transition-colors flex-shrink-0">
+                <span class="text-base leading-none">🗺️</span>
+                <span class="hidden sm:inline">Peta Infografis</span>
+            </a>
+        @endif
     </div>
 
     {{-- Sidebar kiri: 3 kartu terpisah, ditumpuk mepet ke tepi kiri --}}
@@ -93,6 +113,15 @@
             <div class="border-t border-slate-100 p-3">
                 <input id="filter-search" type="text" placeholder="Cari nama aset / kedudukan..."
                        class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+
+            {{-- Chip filter wilayah (RM/Kedudukan) yang lagi aktif --}}
+            <div id="filter-chip-wrap" class="border-t border-slate-100 px-3 py-2 hidden">
+                <div class="flex items-center gap-2 bg-orange-50 text-orange-700 text-xs rounded-lg px-2.5 py-1.5">
+                    <span class="text-sm">📍</span>
+                    <span class="flex-1 min-w-0 truncate font-medium" id="filter-chip-text"></span>
+                    <button type="button" id="filter-chip-clear" class="font-bold hover:text-orange-900 flex-shrink-0" title="Hapus filter wilayah">&times;</button>
+                </div>
             </div>
 
             {{-- Header kolom --}}
@@ -155,12 +184,10 @@
                 </div>
                 <ul id="donut-legend" class="flex-1 min-w-0 space-y-1 text-[11px]"></ul>
             </div>
-            <p class="px-4 pb-3 text-[10px] text-slate-400">Otomatis menyesuaikan filter status, kategori, dan pencarian yang aktif.</p>
+            <p class="px-4 pb-3 text-[10px] text-slate-400">Otomatis menyesuaikan filter status, kategori, wilayah, dan pencarian yang aktif.</p>
         </div>
 
-        {{-- Kartu 3: Kategori Usaha — dihitung LIVE di browser dari titik yang
-             sedang tampil, ikut berubah kalau filter status/kategori/pencarian
-             diganti. Lihat fungsi updateUsahaPanel() di bagian script. --}}
+        {{-- Kartu 3: Kategori Usaha --}}
         <div class="floating-panel shadow-lg rounded-xl overflow-hidden">
             <div class="bg-[#0F2A5C] px-4 py-2.5 flex items-center justify-between">
                 <h2 class="text-white text-xs font-semibold uppercase tracking-wide">Kategori Usaha</h2>
@@ -216,7 +243,7 @@
                     <span class="w-4"></span>
                 </div>
             </div>
-            <p class="text-[10px] text-slate-400 mt-2">Klik salah satu baris RM untuk lihat daftar asetnya.</p>
+            <p class="text-[10px] text-slate-400 mt-2">Klik baris RM untuk filter peta &amp; statistik ke RM itu. Klik 🎯 di kedudukan untuk filter lebih spesifik.</p>
         </div>
     </div>
 
@@ -256,14 +283,10 @@
         const map = L.map('map', { zoomControl: false });
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // Di layar mobile (<768px), panel Analitik & RM yang biasanya mengambang
-        // di pojok kanan-atas/kanan-bawah dipindah ikut masuk ke dalam sidebar
-        // Legend (jadi 1 kolom yang bisa di-scroll), supaya tidak saling tabrakan.
-        // Di layar desktop, keduanya dikembalikan ke posisi pojok masing-masing.
         let isMobileLayout = null;
         function applyResponsiveLayout() {
             const mobile = window.innerWidth < 768;
-            if (mobile === isMobileLayout) return; // tidak ada perubahan, skip
+            if (mobile === isMobileLayout) return;
             isMobileLayout = mobile;
 
             const legend = document.getElementById('legend-panel');
@@ -291,9 +314,6 @@
             }
         }
 
-        // Posisikan sidebar legend persis di bawah top-bar (yang tingginya bisa berubah
-        // kalau tombol-tombolnya wrap ke 2 baris di layar sempit), supaya tidak overlap
-        // ataupun kepotong di bagian bawah layar.
         function layoutPanels() {
             applyResponsiveLayout();
 
@@ -310,16 +330,12 @@
         layoutPanels();
         window.addEventListener('resize', layoutPanels);
 
-        // Batas wilayah Indonesia, dipakai supaya peta otomatis center di area yang
-        // tidak ketutup panel legend (kiri) maupun panel analitik (kanan).
         const indonesiaBounds = L.latLngBounds([-3, 98], [7, 130.5]);
 
         function fitIndonesia() {
             layoutPanels();
             const margin = 16;
 
-            // Ukur lebar/tinggi panel yang sedang tampil secara nyata (bukan angka tebakan),
-            // supaya Indonesia selalu center pas di area yang benar-benar kosong dari panel.
             const rectOf = (id) => {
                 const el = document.getElementById(id);
                 if (!el || el.classList.contains('hidden') || el.offsetParent === null) return null;
@@ -341,7 +357,6 @@
                 paddingBottomRight: [rightPad, bottomPad],
             });
 
-            // Jaga supaya peta tidak ke-zoom out berlebihan gara-gara padding panel
             if (map.getZoom() < 5) {
                 map.setZoom(5);
             }
@@ -368,7 +383,6 @@
         });
         map.addLayer(clusterGroup);
 
-        // Metadata kategori (warna + icon) dari backend, supaya konsisten dengan legend
         const categoryMeta = {
             @foreach ($categoryData as $cat)
                 "{{ $cat['label'] }}": { color: "{{ $cat['color'] }}", icon: "{{ $cat['icon'] }}" },
@@ -388,8 +402,10 @@
         let currentStatus = 'Terdayaguna';
         let activeCategories = new Set([...Object.keys(categoryMeta), '__other__']);
 
-        // Donut chart proporsi kategori — datanya di-update tiap kali filter berubah,
-        // lihat fungsi updateDonut() yang dipanggil dari render().
+        // Filter wilayah aktif — diisi saat user klik baris RM atau tombol 🎯 kedudukan
+        let currentRmFilter = null;
+        let currentKedudukanFilter = null;
+
         const donutLabels = [...Object.keys(categoryMeta), 'Lainnya'];
         const donutColors = [...Object.values(categoryMeta).map(m => m.color), '#94A3B8'];
 
@@ -435,20 +451,15 @@
             }).join('') || '<li class="text-slate-400">Tidak ada data untuk filter ini.</li>';
         }
 
-        // Metadata (warna + icon) kategori Usaha dari backend, urutan tetap sesuai legenda resmi
         const usahaMeta = {
             @foreach ($usahaMetaList as $label => $meta)
                 "{{ $label }}": { color: "{{ $meta['color'] }}", icon: "{{ $meta['icon'] }}" },
             @endforeach
         };
 
-        // Panel "Kategori Usaha" — dihitung ulang tiap render() dari kontrak
-        // milik titik yang sedang tampil (ikut filter status/kategori/pencarian)
         function updateUsahaPanel(points) {
             const counts = {};
             points.forEach(p => {
-                // Group by Sub Asset Code: 1 aset dihitung sekali saja untuk kategori
-                // usahanya, walau asetnya punya lebih dari satu kontrak.
                 const kontrakWithUsaha = (p.kontraks || []).find(k => k.usaha);
                 if (!kontrakWithUsaha) return;
                 counts[kontrakWithUsaha.usaha] = (counts[kontrakWithUsaha.usaha] || 0) + 1;
@@ -457,7 +468,6 @@
             const total = Object.values(counts).reduce((a, b) => a + b, 0);
             document.getElementById('usaha-panel-total').textContent = total.toLocaleString('id-ID') + ' unit';
 
-            // Urutan tetap sesuai legenda resmi dulu, baru kategori lain (kalau ada) diurutkan dari terbanyak
             const knownLabels = Object.keys(usahaMeta).filter(l => counts[l]);
             const extraLabels = Object.keys(counts)
                 .filter(l => !usahaMeta[l])
@@ -575,17 +585,15 @@
                 const matchSearch = !q || p.nama_aset.toLowerCase().includes(q) || (p.kedudukan ?? '').toLowerCase().includes(q);
                 const matchStatus = currentStatus === '__all__' || p.status === currentStatus;
                 const matchCategory = activeCategories.has(categoryKeyFor(p.jenis_aset));
-                return matchSearch && matchStatus && matchCategory;
+                const matchRm = !currentRmFilter || p.rm === currentRmFilter;
+                const matchKedudukan = !currentKedudukanFilter || p.kedudukan === currentKedudukanFilter;
+                return matchSearch && matchStatus && matchCategory && matchRm && matchKedudukan;
             });
 
             render(filtered);
         }
 
-
-        // Tombol master: sembunyikan/tampilkan SEMUA panel (legend, analitik, RM,
-        // badge tipe, tombol switch/infografis) sekaligus, biar tinggal peta saja.
-        // Default-nya: di layar mobile (<768px) otomatis disembunyikan duluan,
-        // di desktop tetap tampil seperti biasa.
+        // Tombol master: sembunyikan/tampilkan SEMUA panel
         let allPanelsHidden = false;
 
         function setPanelsHidden(hidden) {
@@ -607,13 +615,11 @@
             setTimeout(fitIndonesia, 50);
         });
 
-        // Auto-hide sekali saja saat pertama kali dibuka di layar mobile
         if (window.innerWidth < 768) {
             setPanelsHidden(true);
             setTimeout(fitIndonesia, 50);
         }
 
-        // Toggle per-kategori on/off
         document.querySelectorAll('.cat-checkbox').forEach(cb => {
             cb.addEventListener('change', () => {
                 const key = cb.dataset.category;
@@ -623,7 +629,6 @@
             });
         });
 
-        // Filter status
         document.querySelectorAll('.status-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
@@ -635,7 +640,57 @@
 
         document.getElementById('filter-search').addEventListener('input', applyFilter);
 
-        // Accordion per baris RM — klik baris untuk expand/collapse ringkasan per Kedudukan
+        // ==== Filter wilayah (RM & Kedudukan) — ikut memfilter peta + semua statistik ====
+
+        function updateFilterChip() {
+            const wrap = document.getElementById('filter-chip-wrap');
+            const text = document.getElementById('filter-chip-text');
+
+            if (currentKedudukanFilter) {
+                text.textContent = `${currentKedudukanFilter}${currentRmFilter ? ' · ' + currentRmFilter : ''}`;
+                wrap.classList.remove('hidden');
+            } else if (currentRmFilter) {
+                text.textContent = currentRmFilter;
+                wrap.classList.remove('hidden');
+            } else {
+                wrap.classList.add('hidden');
+            }
+
+            document.querySelectorAll('.rm-row').forEach(btn => {
+                btn.classList.toggle('active-filter', btn.dataset.rmToggle === currentRmFilter);
+            });
+        }
+
+        function clearRegionFilter() {
+            currentRmFilter = null;
+            currentKedudukanFilter = null;
+            document.querySelectorAll('[data-rm-panel]').forEach(p => p.classList.add('hidden'));
+            document.querySelectorAll('.rm-row-chevron').forEach(c => c.textContent = '▾');
+            applyFilter();
+            updateFilterChip();
+            fitIndonesia();
+        }
+
+        document.getElementById('filter-chip-clear').addEventListener('click', clearRegionFilter);
+
+        function focusMapOnPoints(points, zoom = 12) {
+            if (points.length === 0) return;
+            if (points.length === 1) {
+                map.flyTo([points[0].lat, points[0].lng], 14, { duration: 0.8 });
+            } else {
+                const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
+                map.flyToBounds(bounds, { padding: [60, 60], maxZoom: zoom, duration: 0.8 });
+            }
+        }
+
+        function focusMapOnRm(rm) {
+            focusMapOnPoints(allPoints.filter(p => p.rm === rm), 11);
+        }
+
+        function focusMapOnKedudukan(kedudukan) {
+            focusMapOnPoints(allPoints.filter(p => p.kedudukan === kedudukan), 14);
+        }
+
         function renderRmAssetList(rm) {
             const items = allPoints.filter(p => p.rm === rm);
 
@@ -657,39 +712,20 @@
                     <span class="w-5"></span>
                 </div>
             ` + sorted.map(([kedudukan, c]) => `
-                <div class="flex items-center gap-1 px-3 py-1.5 border-b border-slate-100 last:border-b-0">
+                <div class="flex items-center gap-1 px-3 py-1.5 border-b border-slate-100 last:border-b-0 kedudukan-row ${kedudukan === currentKedudukanFilter ? 'bg-orange-50' : ''}"
+                     data-kedudukan-row="${kedudukan}">
                     <span class="text-[11px] font-medium text-slate-700 truncate flex-1 min-w-0">${kedudukan}</span>
                     <span class="w-8 text-center text-[11px] font-bold text-emerald-600">${c.terdayaguna}</span>
                     <span class="w-8 text-center text-[11px] font-bold text-slate-400">${c.idle}</span>
                     <button type="button" class="focus-kedudukan-btn flex-shrink-0 w-5 h-5 rounded-md flex items-center justify-center text-[10px] hover:bg-orange-100 transition-colors"
-                            data-kedudukan="${kedudukan}" title="Fokuskan peta ke ${kedudukan}">
+                            data-kedudukan="${kedudukan}" title="Filter &amp; fokuskan peta ke ${kedudukan}">
                         🎯
                     </button>
                 </div>
             `).join('') || '<div class="px-3 py-3 text-center text-[11px] text-slate-400">Tidak ada aset untuk RM ini.</div>';
         }
 
-        // Fokuskan/zoom peta ke sebaran titik pada kedudukan tertentu
-        function focusMapOnKedudukan(kedudukan) {
-            const points = allPoints.filter(p => p.kedudukan === kedudukan);
-            if (points.length === 0) return;
-
-            if (points.length === 1) {
-                map.flyTo([points[0].lat, points[0].lng], 14, { duration: 0.8 });
-            } else {
-                const bounds = L.latLngBounds(points.map(p => [p.lat, p.lng]));
-                map.flyToBounds(bounds, { padding: [60, 60], maxZoom: 14, duration: 0.8 });
-            }
-        }
-
-        // Event delegation, supaya tombol yang dibuat dinamis (hasil innerHTML) tetap kepencet
-        document.getElementById('rm-panel').addEventListener('click', (e) => {
-            const btn = e.target.closest('.focus-kedudukan-btn');
-            if (!btn) return;
-            e.stopPropagation(); // biar tidak ikut toggle accordion RM-nya
-            focusMapOnKedudukan(btn.dataset.kedudukan);
-        });
-
+        // Klik baris RM: expand daftar kedudukan-nya SEKALIGUS filter peta+statistik ke RM itu
         document.querySelectorAll('.rm-row').forEach(btn => {
             btn.addEventListener('click', () => {
                 const rm = btn.dataset.rmToggle;
@@ -697,7 +733,6 @@
                 const chevron = btn.querySelector('.rm-row-chevron');
                 const isOpen = !panel.classList.contains('hidden');
 
-                // Tutup semua panel lain dulu (biar cuma 1 yang kebuka)
                 document.querySelectorAll('[data-rm-panel]').forEach(p => p.classList.add('hidden'));
                 document.querySelectorAll('.rm-row-chevron').forEach(c => c.textContent = '▾');
 
@@ -705,8 +740,43 @@
                     panel.innerHTML = renderRmAssetList(rm);
                     panel.classList.remove('hidden');
                     chevron.textContent = '▴';
+
+                    currentRmFilter = rm;
+                    currentKedudukanFilter = null;
+                    applyFilter();
+                    updateFilterChip();
+                    focusMapOnRm(rm);
+                } else {
+                    currentRmFilter = null;
+                    currentKedudukanFilter = null;
+                    applyFilter();
+                    updateFilterChip();
                 }
             });
+        });
+
+        // Klik tombol 🎯 di baris kedudukan: filter peta+statistik ke kedudukan spesifik itu
+        document.getElementById('rm-panel').addEventListener('click', (e) => {
+            const btn = e.target.closest('.focus-kedudukan-btn');
+            if (!btn) return;
+            e.stopPropagation();
+
+            const kedudukan = btn.dataset.kedudukan;
+            currentKedudukanFilter = kedudukan;
+            applyFilter();
+            updateFilterChip();
+            focusMapOnKedudukan(kedudukan);
+
+            btn.closest('[data-rm-panel]').querySelectorAll('.kedudukan-row').forEach(row => {
+                row.classList.toggle('bg-orange-50', row.dataset.kedudukanRow === kedudukan);
+            });
+        });
+
+        // Toggle panel legend on/off
+        const legendPanel = document.getElementById('legend-panel');
+        document.getElementById('legend-close').addEventListener('click', () => {
+            legendPanel.classList.add('hidden');
+            setTimeout(fitIndonesia, 50);
         });
 
         fetch('{{ route($mapDataRoute) }}')
