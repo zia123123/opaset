@@ -134,27 +134,27 @@
 
             <div class="px-3 pb-2 space-y-1">
                 @foreach ($categoryData as $cat)
-                    <label class="cat-row flex items-center gap-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-opacity">
+                    <label class="cat-row flex items-center gap-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-opacity" data-cat-row="{{ $cat['label'] }}">
                         <input type="checkbox" class="cat-checkbox accent-[#0F2A5C]" data-category="{{ $cat['label'] }}" checked>
                         <span class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
                               style="background-color: {{ $cat['color'] }}1A; border: 1.5px solid {{ $cat['color'] }}">
                             {{ $cat['icon'] }}
                         </span>
                         <span class="flex-1 min-w-0 text-xs font-medium text-slate-700 truncate">{{ $cat['label'] }}</span>
-                        <span class="w-14 text-center text-xs font-semibold text-emerald-600">{{ $cat['terdayaguna'] }}</span>
-                        <span class="w-12 text-center text-xs font-semibold text-slate-400">{{ $cat['idle'] }}</span>
-                        <span class="w-10 text-right text-xs font-bold text-slate-700">{{ $cat['total'] }}</span>
+                        <span class="w-14 text-center text-xs font-semibold text-emerald-600 cat-count-terdaya">{{ $cat['terdayaguna'] }}</span>
+                        <span class="w-12 text-center text-xs font-semibold text-slate-400 cat-count-idle">{{ $cat['idle'] }}</span>
+                        <span class="w-10 text-right text-xs font-bold text-slate-700 cat-count-total">{{ $cat['total'] }}</span>
                     </label>
                 @endforeach
 
                 @if ($otherTotal > 0)
-                    <label class="cat-row flex items-center gap-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-opacity">
+                    <label class="cat-row flex items-center gap-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-opacity" data-cat-row="__other__">
                         <input type="checkbox" class="cat-checkbox accent-[#0F2A5C]" data-category="__other__" checked>
                         <span class="w-7 h-7 rounded-lg flex items-center justify-center text-sm flex-shrink-0 bg-slate-100 border border-slate-300">❔</span>
                         <span class="flex-1 min-w-0 text-xs font-medium text-slate-700 truncate">Lainnya</span>
-                        <span class="w-14 text-center text-xs text-slate-300">-</span>
-                        <span class="w-12 text-center text-xs text-slate-300">-</span>
-                        <span class="w-10 text-right text-xs font-bold text-slate-700">{{ $otherTotal }}</span>
+                        <span class="w-14 text-center text-xs font-semibold text-emerald-600 cat-count-terdaya">0</span>
+                        <span class="w-12 text-center text-xs font-semibold text-slate-400 cat-count-idle">0</span>
+                        <span class="w-10 text-right text-xs font-bold text-slate-700 cat-count-total">{{ $otherTotal }}</span>
                     </label>
                 @endif
             </div>
@@ -162,9 +162,9 @@
             {{-- Footer total keseluruhan --}}
             <div class="bg-[#0F2A5C] px-3 py-2.5 flex items-center gap-2 text-xs">
                 <span class="flex-1 text-white font-semibold uppercase tracking-wide">Total</span>
-                <span class="w-14 text-center text-emerald-300 font-bold">{{ $totalTerdayaguna }}</span>
-                <span class="w-12 text-center text-slate-300 font-bold">{{ $totalIdle }}</span>
-                <span class="w-10 text-right text-white font-bold">{{ $totalTerdayaguna + $totalIdle }}</span>
+                <span class="w-14 text-center text-emerald-300 font-bold" id="legend-footer-terdaya">{{ $totalTerdayaguna }}</span>
+                <span class="w-12 text-center text-slate-300 font-bold" id="legend-footer-idle">{{ $totalIdle }}</span>
+                <span class="w-10 text-right text-white font-bold" id="legend-footer-total">{{ $totalTerdayaguna + $totalIdle }}</span>
             </div>
         </div>
 
@@ -556,6 +556,40 @@
             `;
         }
 
+        // Kartu "Legenda & Filter Aset" — angka Terdaya/Idle/Total per kategori
+        // dihitung ulang tiap render() dari titik yang sedang tampil (ikut filter
+        // status, kategori lain, wilayah RM/Kedudukan, dan pencarian).
+        function updateCategoryLegend(points) {
+            Object.keys(categoryMeta).forEach(label => {
+                const row = document.querySelector(`[data-cat-row="${CSS.escape(label)}"]`);
+                if (!row) return;
+
+                const terdaya = points.filter(p => p.jenis_aset === label && p.status === 'Terdayaguna').length;
+                const idle = points.filter(p => p.jenis_aset === label && p.status !== 'Terdayaguna').length;
+
+                row.querySelector('.cat-count-terdaya').textContent = terdaya;
+                row.querySelector('.cat-count-idle').textContent = idle;
+                row.querySelector('.cat-count-total').textContent = terdaya + idle;
+            });
+
+            const otherRow = document.querySelector('[data-cat-row="__other__"]');
+            if (otherRow) {
+                const otherPoints = points.filter(p => !categoryMeta[p.jenis_aset]);
+                const terdaya = otherPoints.filter(p => p.status === 'Terdayaguna').length;
+                const idle = otherPoints.length - terdaya;
+
+                otherRow.querySelector('.cat-count-terdaya').textContent = terdaya;
+                otherRow.querySelector('.cat-count-idle').textContent = idle;
+                otherRow.querySelector('.cat-count-total').textContent = otherPoints.length;
+            }
+
+            const footerTerdaya = points.filter(p => p.status === 'Terdayaguna').length;
+            const footerIdle = points.length - footerTerdaya;
+            document.getElementById('legend-footer-terdaya').textContent = footerTerdaya;
+            document.getElementById('legend-footer-idle').textContent = footerIdle;
+            document.getElementById('legend-footer-total').textContent = points.length;
+        }
+
         function render(points) {
             clusterGroup.clearLayers();
             const markers = points.map(p => L.marker([p.lat, p.lng], { icon: pinIcon(p) }).bindPopup(popupHtml(p)));
@@ -563,6 +597,7 @@
             updateStats(points);
             updateDonut(points);
             updateUsahaPanel(points);
+            updateCategoryLegend(points);
         }
 
         function updateStats(points) {
