@@ -187,10 +187,10 @@
             <p class="px-4 pb-3 text-[10px] text-slate-400">Otomatis menyesuaikan filter status, kategori, wilayah, dan pencarian yang aktif.</p>
         </div>
 
-        {{-- Kartu 3: Kategori Usaha --}}
+        {{-- Kartu 3: Kategori Usaha (Terdayaguna) / Kondisi Fisik (Idle) — ganti otomatis sesuai filter status --}}
         <div class="floating-panel shadow-lg rounded-xl overflow-hidden">
             <div class="bg-[#0F2A5C] px-4 py-2.5 flex items-center justify-between">
-                <h2 class="text-white text-xs font-semibold uppercase tracking-wide">Kategori Usaha</h2>
+                <h2 id="usaha-panel-title" class="text-white text-xs font-semibold uppercase tracking-wide">Kategori Usaha</h2>
                 <span id="usaha-panel-total" class="text-[10px] text-white/70">-</span>
             </div>
             <div id="usaha-panel-list" class="divide-y divide-dashed divide-slate-100 max-h-64 overflow-y-auto scrollbar-thin">
@@ -457,26 +457,27 @@
             @endforeach
         };
 
-        function updateUsahaPanel(points) {
-            const counts = {};
-            points.forEach(p => {
-                const kontrakWithUsaha = (p.kontraks || []).find(k => k.usaha);
-                if (!kontrakWithUsaha) return;
-                counts[kontrakWithUsaha.usaha] = (counts[kontrakWithUsaha.usaha] || 0) + 1;
-            });
+        // Meta warna/icon untuk Kondisi Fisik (dipakai saat filter status = Idle)
+        const kondisiFisikMeta = {
+            'Baik': { color: '#16A34A', icon: '🟢' },
+            'Rusak Ringan': { color: '#CA8A04', icon: '🟡' },
+            'Rusak Sedang': { color: '#EA580C', icon: '🟠' },
+            'Rusak Berat': { color: '#DC2626', icon: '🔴' },
+        };
 
+        function renderMetaList(counts, metaMap, defaultMeta, unitSuffix) {
             const total = Object.values(counts).reduce((a, b) => a + b, 0);
-            document.getElementById('usaha-panel-total').textContent = total.toLocaleString('id-ID') + ' unit';
+            document.getElementById('usaha-panel-total').textContent = total.toLocaleString('id-ID') + ' ' + unitSuffix;
 
-            const knownLabels = Object.keys(usahaMeta).filter(l => counts[l]);
+            const knownLabels = Object.keys(metaMap).filter(l => counts[l]);
             const extraLabels = Object.keys(counts)
-                .filter(l => !usahaMeta[l])
+                .filter(l => !metaMap[l])
                 .sort((a, b) => counts[b] - counts[a]);
             const labels = [...knownLabels, ...extraLabels];
 
             const listEl = document.getElementById('usaha-panel-list');
             listEl.innerHTML = labels.map(label => {
-                const meta = usahaMeta[label] || { color: '#64748B', icon: '📍' };
+                const meta = metaMap[label] || defaultMeta;
                 const count = counts[label];
                 const percent = total > 0 ? (count / total * 100).toFixed(1).replace('.', ',') : '0,0';
                 return `
@@ -487,6 +488,37 @@
                         <span class="w-12 text-right text-[10px] font-semibold" style="color:${meta.color}">${percent}%</span>
                     </div>`;
             }).join('') || '<div class="px-4 py-6 text-center text-xs text-slate-400">Tidak ada data untuk filter ini.</div>';
+        }
+
+        // Kartu 3 sidebar: "Kategori Usaha" kalau status Terdayaguna/Semua,
+        // otomatis ganti jadi "Kondisi Fisik" kalau filter status = Idle
+        // (karena data usaha/kontrak cuma relevan buat aset yang aktif disewakan).
+        function updateUsahaPanel(points) {
+            const titleEl = document.getElementById('usaha-panel-title');
+
+            if (currentStatus === 'Idle') {
+                titleEl.textContent = 'Kondisi Fisik (Idle)';
+
+                const counts = {};
+                points.forEach(p => {
+                    if (!p.kondisi_fisik) return;
+                    counts[p.kondisi_fisik] = (counts[p.kondisi_fisik] || 0) + 1;
+                });
+
+                renderMetaList(counts, kondisiFisikMeta, { color: '#64748B', icon: '⚪' }, 'aset');
+                return;
+            }
+
+            titleEl.textContent = 'Kategori Usaha';
+
+            const counts = {};
+            points.forEach(p => {
+                const kontrakWithUsaha = (p.kontraks || []).find(k => k.usaha);
+                if (!kontrakWithUsaha) return;
+                counts[kontrakWithUsaha.usaha] = (counts[kontrakWithUsaha.usaha] || 0) + 1;
+            });
+
+            renderMetaList(counts, usahaMeta, { color: '#64748B', icon: '📍' }, 'unit');
         }
 
         function pinIcon(point) {

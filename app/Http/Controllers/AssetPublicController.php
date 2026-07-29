@@ -292,6 +292,8 @@ class AssetPublicController extends Controller
                 'status' => $asset->status,
                 'luas_tanah' => $asset->luas_tanah,
                 'luas_bangunan' => $asset->luas_bangunan,
+                'kondisi_fisik' => $asset->kondisi_fisik,
+                'status_pendayagunaan' => $asset->status_pendayagunaan,
                 'is_precise' => $asset->latitude !== null && $asset->longitude !== null,
                 'lat' => $lat,
                 'lng' => $lng,
