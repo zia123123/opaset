@@ -3,6 +3,7 @@
 // Isi routes/web.php dengan potongan berikut (gabungkan dengan route lain yang sudah ada)
 
 use App\Http\Controllers\Admin\AssetImportController;
+use App\Http\Controllers\Admin\AssetPendayagunaanImportController;
 use App\Http\Controllers\Admin\AssetUsahaImportController;
 use App\Http\Controllers\AssetPublicController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -47,4 +48,5 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     Route::get('/assets/import-usaha', [AssetUsahaImportController::class, 'index'])->name('assets.import-usaha');
     Route::post('/assets/import-usaha', [AssetUsahaImportController::class, 'store'])->name('assets.import-usaha.store');
+
 });

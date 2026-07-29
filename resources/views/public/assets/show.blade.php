@@ -9,12 +9,25 @@
 <body class="bg-slate-50 min-h-screen">
 
     {{-- Header --}}
-  
+    <div class="bg-gradient-to-r from-[#0F2A5C] to-[#1E4C9A] border-b-4 border-orange-400">
+        <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between flex-wrap gap-3">
+            <div>
+                <p class="text-orange-300 text-xs font-semibold tracking-widest uppercase">BUMN Untuk Indonesia &middot; Bulog</p>
+                <h1 class="text-white text-lg font-bold mt-0.5">Detail Aset</h1>
+            </div>
+            <nav class="flex items-center gap-4 text-sm">
+                <a href="{{ route('public.assets.dashboard') }}" class="text-white/80 hover:text-white">Dashboard</a>
+                <a href="{{ route('public.assets.map') }}" class="text-white/80 hover:text-white">Peta</a>
+                <a href="{{ route('public.assets.map-non-kd') }}" class="text-white/80 hover:text-white">Peta Non KD</a>
+                <a href="{{ route('public.assets.index') }}" class="text-white/80 hover:text-white">Data Aset</a>
+            </nav>
+        </div>
+    </div>
 
     <div class="max-w-5xl mx-auto px-6 py-8">
 
-        <a href="{{ route('public.assets.map') }}" class="text-sm text-slate-500 hover:text-orange-600 mb-4 inline-flex items-center gap-1">
-            <span>&larr;</span> Kembali ke map
+        <a href="{{ route('public.assets.index') }}" class="text-sm text-slate-500 hover:text-orange-600 mb-4 inline-flex items-center gap-1">
+            <span>&larr;</span> Kembali ke daftar aset
         </a>
 
         {{-- Kartu utama: header kategori berwarna + info aset --}}
@@ -40,6 +53,16 @@
                 </span>
             </div>
 
+            <div class="px-6 pt-3">
+                <span @class([
+                    'inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold',
+                    'bg-blue-100 text-blue-700' => $asset->tipe_aset === 'KD List',
+                    'bg-purple-100 text-purple-700' => $asset->tipe_aset !== 'KD List',
+                ])>
+                    {{ $asset->tipe_aset }}
+                </span>
+            </div>
+
             {{-- Grid info detail --}}
             <div class="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-slate-100 border-t border-slate-100">
                 <div class="p-4">
@@ -60,6 +83,33 @@
                 </div>
             </div>
         </div>
+
+        {{-- Status Pendayagunaan (khususnya buat aset Idle) --}}
+        @if ($asset->status_pendayagunaan || $asset->kondisi_fisik || $asset->keterangan)
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-5 mb-6">
+                <h3 class="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-3">Status Pendayagunaan</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    @if ($asset->status_pendayagunaan)
+                        <div>
+                            <dt class="text-slate-400 text-xs">Status Pendayagunaan</dt>
+                            <dd class="text-slate-800 font-medium">{{ $asset->status_pendayagunaan }}</dd>
+                        </div>
+                    @endif
+                    @if ($asset->kondisi_fisik)
+                        <div>
+                            <dt class="text-slate-400 text-xs">Kondisi Fisik</dt>
+                            <dd class="text-slate-800 font-medium">{{ $asset->kondisi_fisik }}</dd>
+                        </div>
+                    @endif
+                    @if ($asset->keterangan)
+                        <div class="md:col-span-2">
+                            <dt class="text-slate-400 text-xs">Keterangan</dt>
+                            <dd class="text-slate-700">{{ $asset->keterangan }}</dd>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
 
         {{-- Ringkasan mitra/kontrak --}}
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
