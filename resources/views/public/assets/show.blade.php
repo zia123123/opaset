@@ -15,18 +15,13 @@
                 <p class="text-orange-300 text-xs font-semibold tracking-widest uppercase">BUMN Untuk Indonesia &middot; Bulog</p>
                 <h1 class="text-white text-lg font-bold mt-0.5">Detail Aset</h1>
             </div>
-            <nav class="flex items-center gap-4 text-sm">
-                <a href="{{ route('public.assets.dashboard') }}" class="text-white/80 hover:text-white">Dashboard</a>
-                <a href="{{ route('public.assets.map') }}" class="text-white/80 hover:text-white">Peta</a>
-                <a href="{{ route('public.assets.map-non-kd') }}" class="text-white/80 hover:text-white">Peta Non KD</a>
-                <a href="{{ route('public.assets.index') }}" class="text-white/80 hover:text-white">Data Aset</a>
-            </nav>
+           >
         </div>
     </div>
 
     <div class="max-w-5xl mx-auto px-6 py-8">
 
-        <a href="{{ route('public.assets.index') }}" class="text-sm text-slate-500 hover:text-orange-600 mb-4 inline-flex items-center gap-1">
+        <a href="{{ route('public.assets.peta') }}" class="text-sm text-slate-500 hover:text-orange-600 mb-4 inline-flex items-center gap-1">
             <span>&larr;</span> Kembali ke daftar aset
         </a>
 
