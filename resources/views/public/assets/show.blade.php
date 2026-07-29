@@ -21,8 +21,8 @@
 
     <div class="max-w-5xl mx-auto px-6 py-8">
 
-        <a href="{{ route('public.assets.peta') }}" class="text-sm text-slate-500 hover:text-orange-600 mb-4 inline-flex items-center gap-1">
-            <span>&larr;</span> Kembali ke daftar aset
+        <a href="{{ route('public.assets.map') }}" class="text-sm text-slate-500 hover:text-orange-600 mb-4 inline-flex items-center gap-1">
+            <span>&larr;</span> Kembali ke Peta
         </a>
 
         {{-- Kartu utama: header kategori berwarna + info aset --}}
