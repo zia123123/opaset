@@ -30,7 +30,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('admin.assets.import'));
+        return redirect()->intended(route('menu'));
     }
 
     public function destroy(Request $request): RedirectResponse
