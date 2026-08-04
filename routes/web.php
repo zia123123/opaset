@@ -7,15 +7,33 @@ use App\Http\Controllers\Admin\AssetPendayagunaanImportController;
 use App\Http\Controllers\Admin\AssetUsahaImportController;
 use App\Http\Controllers\AssetPublicController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\MenuController;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Halaman publik (tanpa login)
+| Root: kalau sudah login lempar ke /menu, kalau belum lempar ke /login
+|--------------------------------------------------------------------------
+*/
+Route::get('/', function () {
+    return redirect()->to(Auth::check() ? route('menu') : route('login'));
+})->name('home');
+
+/*
+|--------------------------------------------------------------------------
+| Halaman menu/hub setelah login
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->get('/menu', [MenuController::class, 'index'])->name('menu');
+
+/*
+|--------------------------------------------------------------------------
+| Halaman publik (tanpa login) — semua tetap bisa diakses langsung via URL
 |--------------------------------------------------------------------------
 */
 Route::name('public.assets.')->group(function () {
-    Route::get('/', [AssetPublicController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard', [AssetPublicController::class, 'dashboard'])->name('dashboard');
     Route::get('/peta', [AssetPublicController::class, 'map'])->name('map');
     Route::get('/peta/data', [AssetPublicController::class, 'mapData'])->name('map.data');
     Route::get('/peta-non-kd-list', [AssetPublicController::class, 'mapNonKd'])->name('map-non-kd');
@@ -48,5 +66,4 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
 
     Route::get('/assets/import-usaha', [AssetUsahaImportController::class, 'index'])->name('assets.import-usaha');
     Route::post('/assets/import-usaha', [AssetUsahaImportController::class, 'store'])->name('assets.import-usaha.store');
-
 });
