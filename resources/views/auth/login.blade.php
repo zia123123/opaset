@@ -11,6 +11,8 @@
     <div class="w-full max-w-sm">
 
         <div class="text-center mb-6">
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwQYJbcBBnIkAPTEYqOMTkwzDN6saTZK_anLV4Q2Bxvlxle8xD-i52Exc&s=10"
+                 alt="Icon" class="w-16 h-16 mx-auto mb-3 rounded-full object-contain">
             <p class="text-sm font-semibold text-orange-600 tracking-wide uppercase">Bulog</p>
             <h1 class="text-xl font-bold text-slate-900 mt-1">Login Admin</h1>
             <p class="text-slate-500 text-sm mt-1">Dashboard Opaset Bulog</p>
