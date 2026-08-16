@@ -2,13 +2,14 @@
 
 // Isi routes/web.php dengan potongan berikut (gabungkan dengan route lain yang sudah ada)
 
+use App\Http\Controllers\Admin\AssetFullImportController;
 use App\Http\Controllers\Admin\AssetImportController;
 use App\Http\Controllers\Admin\AssetPendayagunaanImportController;
 use App\Http\Controllers\Admin\AssetUsahaImportController;
 use App\Http\Controllers\AssetPublicController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\MenuController;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::get('/', function () {
-    return redirect()->to(Auth::check() ? route('menu') : route('login'));
+    return redirect()->to(route('public.assets.map'));
 })->name('home');
 
 /*
@@ -61,9 +62,13 @@ Route::middleware('auth')->post('/logout', [AuthenticatedSessionController::clas
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
+    Route::get('/assets/import-full', [AssetFullImportController::class, 'index'])->name('assets.import-full');
+    Route::post('/assets/import-full', [AssetFullImportController::class, 'store'])->name('assets.import-full.store');
+
     Route::get('/assets/import', [AssetImportController::class, 'index'])->name('assets.import');
     Route::post('/assets/import', [AssetImportController::class, 'store'])->name('assets.import.store');
 
     Route::get('/assets/import-usaha', [AssetUsahaImportController::class, 'index'])->name('assets.import-usaha');
     Route::post('/assets/import-usaha', [AssetUsahaImportController::class, 'store'])->name('assets.import-usaha.store');
+
 });
