@@ -121,7 +121,7 @@ class AssetFullImporter
             'rm' => $this->val($sheet, "B{$row}"),
             'kedudukan' => $this->val($sheet, "C{$row}"),
             'nama_aset' => $this->val($sheet, "D{$row}"),
-            'jenis_aset' => $this->val($sheet, "F{$row}"),
+            'jenis_aset' => $this->normalizeJenisAset($this->val($sheet, "F{$row}")),
             'asset_code' => $this->val($sheet, "H{$row}"),
             'latitude' => $this->fixCoordinate($this->val($sheet, "I{$row}"), 'lat'),
             'longitude' => $this->fixCoordinate($this->val($sheet, "J{$row}"), 'lng'),
@@ -194,6 +194,22 @@ class AssetFullImporter
         $clean = preg_replace('/[^0-9,.\-]/', '', (string) $value);
 
         return is_numeric($clean) ? (float) $clean : null;
+    }
+
+    /**
+     * File sumber kadang menulis kategori tanpa spasi di sekitar "/"
+     * (mis. "Gedung/Ruang" alih-alih "Gedung / Ruang"), sehingga tidak
+     * cocok dengan daftar 6 kategori baku dan jatuh ke "Lainnya". Fungsi
+     * ini merapikan spasinya supaya selalu konsisten dengan format baku,
+     * apapun format aslinya di file.
+     */
+    protected function normalizeJenisAset(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return $value;
+        }
+
+        return preg_replace('/\s*\/\s*/', ' / ', trim($value));
     }
 
     /**
