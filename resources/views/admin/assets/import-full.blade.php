@@ -21,14 +21,7 @@
             </p>
         </div>
 
-        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700">
-            ⚠️ <b>Mode RESET TOTAL:</b> seluruh data aset & kontrak yang ada di database saat ini akan <b>DIHAPUS BERSIH</b>
-            terlebih dahulu, baru diisi ulang dari file yang diupload. Bukan update/gabung — hasil akhirnya akan
-            persis sama dengan isi file ini. Data <b>Status Pendayagunaan / Kondisi Fisik / Keterangan</b> (yang
-            disimpan terpisah di tabel aset) juga ikut terhapus — kalau masih dibutuhkan, upload ulang file itu
-            setelah proses ini selesai lewat
-            <a href="{{ route('admin.assets.import-pendayagunaan') }}" class="underline font-medium">halaman import status pendayagunaan</a>.
-        </div>
+       
 
         @if (session('result'))
             @php $r = session('result'); @endphp
