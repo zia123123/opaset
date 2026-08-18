@@ -123,8 +123,8 @@ class AssetFullImporter
             'nama_aset' => $this->val($sheet, "D{$row}"),
             'jenis_aset' => $this->val($sheet, "F{$row}"),
             'asset_code' => $this->val($sheet, "H{$row}"),
-            'latitude' => $this->toNumber($this->val($sheet, "I{$row}")),
-            'longitude' => $this->toNumber($this->val($sheet, "J{$row}")),
+            'latitude' => $this->fixCoordinate($this->val($sheet, "I{$row}"), 'lat'),
+            'longitude' => $this->fixCoordinate($this->val($sheet, "J{$row}"), 'lng'),
             'luas_tanah' => $this->toNumber($this->val($sheet, "K{$row}")),
             'luas_bangunan' => $this->toNumber($this->val($sheet, "L{$row}")),
             'tipe_aset' => $this->val($sheet, "M{$row}") ?? 'KD List',
@@ -194,6 +194,56 @@ class AssetFullImporter
         $clean = preg_replace('/[^0-9,.\-]/', '', (string) $value);
 
         return is_numeric($clean) ? (float) $clean : null;
+    }
+
+    /**
+     * Beberapa baris di file sumber kehilangan titik desimalnya (mis. Longitude
+     * tertulis "106829439" alih-alih "106.829439", atau Latitude "-7283395"
+     * alih-alih "-7.283395") — kemungkinan besar karena format sel Excel-nya.
+     * Fungsi ini mendeteksi & membetulkan otomatis dengan mencoba beberapa
+     * posisi titik desimal, lalu memilih yang menghasilkan koordinat masuk
+     * akal untuk wilayah Indonesia. Kalau tidak ada satupun yang masuk akal,
+     * kembalikan null (lebih aman daripada memasukkan koordinat ngawur).
+     */
+    protected function fixCoordinate($value, string $type): ?float
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $raw = (string) $value;
+        $negative = str_starts_with(trim($raw), '-');
+        $digitsOnly = preg_replace('/[^0-9]/', '', $raw);
+
+        if ($digitsOnly === '') {
+            return null;
+        }
+
+        foreach ([1, 2, 3] as $intLen) {
+            if (strlen($digitsOnly) <= $intLen) {
+                continue;
+            }
+
+            $candidate = (float) (substr($digitsOnly, 0, $intLen) . '.' . substr($digitsOnly, $intLen));
+            if ($negative) {
+                $candidate = -$candidate;
+            }
+
+            if ($this->isPlausibleCoordinate($candidate, $type)) {
+                return round($candidate, 7);
+            }
+        }
+
+        $this->errors[] = "Koordinat {$type} '{$value}' tidak bisa dibetulkan otomatis (di luar jangkauan wilayah Indonesia), dikosongkan.";
+
+        return null;
+    }
+
+    protected function isPlausibleCoordinate(float $num, string $type): bool
+    {
+        return $type === 'lat'
+            ? $num >= -12 && $num <= 8
+            : $num >= 90 && $num <= 142;
     }
 
     protected function toDate($value): ?string
