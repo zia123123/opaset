@@ -634,17 +634,23 @@
         }
 
         function updateStats(points) {
-            const totalTanah = points.reduce((sum, p) => sum + Number(p.luas_tanah ?? 0), 0);
-            const totalBangunan = points.reduce((sum, p) => sum + Number(p.luas_bangunan ?? 0), 0);
-            const totalNilaiKontrak = points.reduce((sum, p) => sum + p.kontraks.reduce((s, k) => s + Number(k.nilai_kontrak ?? 0), 0), 0);
-            const totalMitra = points.reduce((sum, p) => sum + p.kontraks.length, 0);
+    const totalTanah = points.reduce((sum, p) => sum + Number(p.luas_tanah ?? 0), 0);
+    const totalBangunan = points.reduce((sum, p) => sum + Number(p.luas_bangunan ?? 0), 0);
+    const totalNilaiKontrak = points.reduce((sum, p) => sum + p.kontraks.reduce((s, k) => s + Number(k.nilai_kontrak ?? 0), 0), 0);
+    const totalMitra = points.reduce((sum, p) => sum + p.kontraks.length, 0);
 
-            document.getElementById('stat-total-aset').textContent = formatNumber(points.length);
-            document.getElementById('stat-luas-tanah').textContent = formatNumber(totalTanah);
-            document.getElementById('stat-luas-bangunan').textContent = formatNumber(totalBangunan);
-            document.getElementById('stat-jml-mitra').textContent = formatNumber(totalMitra);
-            document.getElementById('stat-nilai-kontrak').textContent = formatRupiah(totalNilaiKontrak);
-        }
+    // Fungsi kecil untuk mengecek apakah elemen ada sebelum diisi text-nya
+    const setText = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
+
+    setText('stat-total-aset', formatNumber(points.length));
+    setText('stat-luas-tanah', formatNumber(totalTanah));
+    setText('stat-luas-bangunan', formatNumber(totalBangunan));
+    setText('stat-jml-mitra', formatNumber(totalMitra));
+    setText('stat-nilai-kontrak', formatRupiah(totalNilaiKontrak));
+}
 
         // "Filter global" = status, kategori, search (dari kartu Legenda & Filter).
         // "Filter wilayah" = RM/Kedudukan (dari panel Status per RM, lihat di bawah).
