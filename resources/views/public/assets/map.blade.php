@@ -248,7 +248,7 @@
     </div>
 
     {{-- Panel analitik mengambang --}}
-    <div id="analytics-panel" class="hideable-panel absolute top-4 right-4 z-[900] floating-panel shadow-lg rounded-xl p-4 w-72 max-w-[calc(100vw-2rem)]">
+    <div id="analytics-panel" class="absolute top-4 right-4 z-[900] floating-panel shadow-lg rounded-xl p-4 w-72 max-w-[calc(100vw-2rem)]">
         <div class="grid grid-cols-2 gap-3">
             <div>
                 <p class="text-[9px] font-medium text-slate-400 uppercase tracking-wide">Aset Tampil</p>
@@ -268,10 +268,10 @@
             </div>
         </div>
 
-        <!-- <div class="border-t border-slate-100 mt-3 pt-3">
+        <div class="border-t border-slate-100 mt-3 pt-3">
             <p class="text-[9px] font-medium text-slate-400 uppercase tracking-wide">Total Nilai Kontrak</p>
             <p id="stat-nilai-kontrak" class="text-base font-bold text-emerald-600 leading-snug break-words">-</p>
-        </div> -->
+        </div>
     </div>
 
     {{-- Loading --}}
