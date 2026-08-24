@@ -112,10 +112,10 @@
                 <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Jumlah Mitra</p>
                 <p class="text-2xl font-bold text-slate-900 mt-1">{{ $asset->kontraks->count() }}</p>
             </div>
-            <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 col-span-2 md:col-span-1">
+            <!-- <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4 col-span-2 md:col-span-1">
                 <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Total Nilai Kontrak</p>
                 <p class="text-xl font-bold text-emerald-600 mt-1">Rp {{ number_format($totalNilaiKontrak ?? 0, 0, ',', '.') }}</p>
-            </div>
+            </div> -->
             <div class="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
                 <p class="text-[11px] font-medium text-slate-400 uppercase tracking-wide">Status Aset</p>
                 <p class="text-sm font-semibold mt-1" style="color: {{ $asset->status === 'Terdayaguna' ? '#059669' : '#64748B' }}">
