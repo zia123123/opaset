@@ -621,6 +621,40 @@
             document.getElementById('legend-footer-idle').textContent = footerIdle;
             document.getElementById('legend-footer-total').textContent = points.length;
         }
+        function updateStats(points) {
+    // Total aset
+    document.getElementById('stat-total-aset').textContent = points.length.toLocaleString('id-ID');
+    
+    // Total luas tanah
+    const totalLuasTanah = points.reduce((sum, p) => sum + (parseFloat(p.luas_tanah) || 0), 0);
+    document.getElementById('stat-luas-tanah').textContent = totalLuasTanah.toLocaleString('id-ID');
+    
+    // Total luas bangunan
+    const totalLuasBangunan = points.reduce((sum, p) => sum + (parseFloat(p.luas_bangunan) || 0), 0);
+    document.getElementById('stat-luas-bangunan').textContent = totalLuasBangunan.toLocaleString('id-ID');
+    
+    // Total jumlah mitra (unique)
+    const mitraSet = new Set();
+    points.forEach(p => {
+        if (p.kontraks && p.kontraks.length > 0) {
+            p.kontraks.forEach(k => {
+                if (k.nama_mitra_kerjasama) {
+                    mitraSet.add(k.nama_mitra_kerjasama);
+                }
+            });
+        }
+    });
+    document.getElementById('stat-jml-mitra').textContent = mitraSet.size.toLocaleString('id-ID');
+    
+    // Total nilai kontrak (opsional - kalau mau di-uncomment)
+    // const totalNilaiKontrak = points.reduce((sum, p) => {
+    //     if (p.kontraks && p.kontraks.length > 0) {
+    //         return sum + p.kontraks.reduce((s, k) => s + (parseFloat(k.nilai_kontrak) || 0), 0);
+    //     }
+    //     return sum;
+    // }, 0);
+    // document.getElementById('stat-nilai-kontrak').textContent = 'Rp ' + totalNilaiKontrak.toLocaleString('id-ID');
+}
 
         function render(points) {
             clusterGroup.clearLayers();
