@@ -561,7 +561,6 @@
                         <div class="font-medium text-slate-800">${k.nama_mitra_kerjasama ?? '-'}</div>
                         <div>${k.usaha ?? '-'} &middot; ${k.jenis_usaha ?? '-'}</div>
                         <div>Tanah ${formatNumber(k.luas_tanah_kontrak)} m² &middot; Bangunan ${formatNumber(k.luas_bangunan_kontrak)} m²</div>
-                        <div>${formatRupiah(k.nilai_kontrak)}</div>
                         <div class="text-slate-400">${k.tanggal_mulai_kerjasama ?? '-'} s/d ${k.tanggal_berakhir_kerjasama ?? '-'}</div>
                     </div>
                 `).join('');
@@ -579,7 +578,9 @@
                         <div class="font-semibold text-slate-900 text-sm">${p.nama_aset}</div>
                         <div class="text-xs text-slate-500 mb-2">${p.kedudukan} &middot; ${p.rm}</div>
                         <div class="text-xs text-slate-600">Tanah ${formatNumber(p.luas_tanah)} m² &middot; Bangunan ${formatNumber(p.luas_bangunan)} m²</div>
-                      
+                        <div class="text-[10px] mt-1 ${p.is_precise ? 'text-emerald-600' : 'text-amber-500'}">
+                            ${p.is_precise ? '📍 Koordinat presisi (GPS)' : '〜 Koordinat perkiraan wilayah'}
+                        </div>
                         ${kontrakHtml}
                         <a href="${p.detail_url}" class="inline-block mt-3 text-xs font-medium text-orange-600 hover:underline">Lihat detail &rarr;</a>
                     </div>
@@ -631,24 +632,7 @@
             updateCategoryLegend(points);
         }
 
-        function updateStats(points) {
-    const totalTanah = points.reduce((sum, p) => sum + Number(p.luas_tanah ?? 0), 0);
-    const totalBangunan = points.reduce((sum, p) => sum + Number(p.luas_bangunan ?? 0), 0);
-    const totalNilaiKontrak = points.reduce((sum, p) => sum + p.kontraks.reduce((s, k) => s + Number(k.nilai_kontrak ?? 0), 0), 0);
-    const totalMitra = points.reduce((sum, p) => sum + p.kontraks.length, 0);
-
-    // Fungsi kecil untuk mengecek apakah elemen ada sebelum diisi text-nya
-    const setText = (id, text) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = text;
-    };
-
-    setText('stat-total-aset', formatNumber(points.length));
-    setText('stat-luas-tanah', formatNumber(totalTanah));
-    setText('stat-luas-bangunan', formatNumber(totalBangunan));
-    setText('stat-jml-mitra', formatNumber(totalMitra));
-    setText('stat-nilai-kontrak', formatRupiah(totalNilaiKontrak));
-}
+        
 
         // "Filter global" = status, kategori, search (dari kartu Legenda & Filter).
         // "Filter wilayah" = RM/Kedudukan (dari panel Status per RM, lihat di bawah).
