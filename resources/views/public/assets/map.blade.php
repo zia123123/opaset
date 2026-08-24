@@ -579,9 +579,7 @@
                         <div class="font-semibold text-slate-900 text-sm">${p.nama_aset}</div>
                         <div class="text-xs text-slate-500 mb-2">${p.kedudukan} &middot; ${p.rm}</div>
                         <div class="text-xs text-slate-600">Tanah ${formatNumber(p.luas_tanah)} m² &middot; Bangunan ${formatNumber(p.luas_bangunan)} m²</div>
-                        <div class="text-[10px] mt-1 ${p.is_precise ? 'text-emerald-600' : 'text-amber-500'}">
-                            ${p.is_precise ? '📍 Koordinat presisi (GPS)' : '〜 Koordinat perkiraan wilayah'}
-                        </div>
+                      
                         ${kontrakHtml}
                         <a href="${p.detail_url}" class="inline-block mt-3 text-xs font-medium text-orange-600 hover:underline">Lihat detail &rarr;</a>
                     </div>
