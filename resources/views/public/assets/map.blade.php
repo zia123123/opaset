@@ -268,10 +268,10 @@
             </div>
         </div>
 
-        <div class="border-t border-slate-100 mt-3 pt-3">
+        <!-- <div class="border-t border-slate-100 mt-3 pt-3">
             <p class="text-[9px] font-medium text-slate-400 uppercase tracking-wide">Total Nilai Kontrak</p>
             <p id="stat-nilai-kontrak" class="text-base font-bold text-emerald-600 leading-snug break-words">-</p>
-        </div>
+        </div> -->
     </div>
 
     {{-- Loading --}}
