@@ -52,6 +52,12 @@ Route::name('public.assets.')->group(function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
+
+    // Halaman register admin tersembunyi — sengaja pakai path acak, tidak
+    // ditautkan di navigasi manapun. HAPUS/nonaktifkan blok ini setelah
+    // akun admin berhasil dibuat, supaya tidak jadi celah keamanan.
+    Route::get('/daftar-admin-x9k2f7', [RegisteredUserController::class, 'create'])->name('register');
+    Route::post('/daftar-admin-x9k2f7', [RegisteredUserController::class, 'store'])->name('register.store');
 });
 
 Route::middleware('auth')->post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
@@ -63,6 +69,7 @@ Route::middleware('auth')->post('/logout', [AuthenticatedSessionController::clas
 */
 Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/assets/import-full', [AssetFullImportController::class, 'index'])->name('assets.import-full');
+    Route::post('/assets/import-full/sheets', [AssetFullImportController::class, 'listSheets'])->name('assets.import-full.sheets');
     Route::post('/assets/import-full', [AssetFullImportController::class, 'store'])->name('assets.import-full.store');
 
     Route::get('/assets/import', [AssetImportController::class, 'index'])->name('assets.import');
@@ -71,4 +78,6 @@ Route::prefix('admin')->name('admin.')->middleware('auth')->group(function () {
     Route::get('/assets/import-usaha', [AssetUsahaImportController::class, 'index'])->name('assets.import-usaha');
     Route::post('/assets/import-usaha', [AssetUsahaImportController::class, 'store'])->name('assets.import-usaha.store');
 
+    Route::get('/assets/import-pendayagunaan', [AssetPendayagunaanImportController::class, 'index'])->name('assets.import-pendayagunaan');
+    Route::post('/assets/import-pendayagunaan', [AssetPendayagunaanImportController::class, 'store'])->name('assets.import-pendayagunaan.store');
 });

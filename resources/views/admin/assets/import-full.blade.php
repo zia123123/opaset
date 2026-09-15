@@ -21,7 +21,14 @@
             </p>
         </div>
 
-       
+        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700">
+            ⚠️ <b>Mode RESET TOTAL:</b> seluruh data aset & kontrak yang ada di database saat ini akan <b>DIHAPUS BERSIH</b>
+            terlebih dahulu, baru diisi ulang dari file yang diupload. Bukan update/gabung — hasil akhirnya akan
+            persis sama dengan isi file ini. Data <b>Status Pendayagunaan / Kondisi Fisik / Keterangan</b> (yang
+            disimpan terpisah di tabel aset) juga ikut terhapus — kalau masih dibutuhkan, upload ulang file itu
+            setelah proses ini selesai lewat
+            <a href="{{ route('admin.assets.import-pendayagunaan') }}" class="underline font-medium">halaman import status pendayagunaan</a>.
+        </div>
 
         @if (session('result'))
             @php $r = session('result'); @endphp
@@ -29,6 +36,9 @@
                 <p class="font-medium text-emerald-800 mb-2">Import selesai</p>
                 <ul class="text-sm text-emerald-700 space-y-1">
                     <li>Sheet yang diproses: <span class="font-semibold">{{ implode(', ', $r['processed_sheets']) ?: '-' }}</span></li>
+                    @if (!empty($r['skipped_sheets']))
+                        <li>Sheet yang dilewati (bukan sheet data): <span class="font-semibold">{{ implode(', ', $r['skipped_sheets']) }}</span></li>
+                    @endif
                     <li>Aset baru dibuat: <span class="font-semibold">{{ $r['assets_created'] }}</span></li>
                     <li>Aset diperbarui: <span class="font-semibold">{{ $r['assets_updated'] }}</span></li>
                     <li>Data kontrak/mitra dibuat: <span class="font-semibold">{{ $r['kontrak_created'] }}</span></li>
@@ -73,12 +83,60 @@
 
             <p class="text-xs text-slate-400 mt-2">Maksimal 20MB.</p>
 
+            <div id="sheet-picker" class="mt-4 hidden">
+                <p class="text-sm font-medium text-slate-700 mb-2">
+                    Pilih sheet yang mau diproses <span class="text-slate-400 font-normal">(kosongkan semua = proses semua sheet otomatis)</span>
+                </p>
+                <div id="sheet-list" class="space-y-1.5 border border-slate-200 rounded-lg p-3 bg-slate-50"></div>
+            </div>
+            <p id="sheet-loading" class="text-xs text-slate-400 mt-2 hidden">Membaca daftar sheet...</p>
+
             <button type="submit"
                     class="mt-5 inline-flex items-center gap-2 bg-slate-900 text-white text-sm font-medium
                            px-5 py-2.5 rounded-lg hover:bg-slate-700 transition-colors">
                 Upload &amp; Update Semua Data
             </button>
         </form>
+
+        <script>
+            const fileInput = document.getElementById('excel_file');
+            const sheetPicker = document.getElementById('sheet-picker');
+            const sheetList = document.getElementById('sheet-list');
+            const sheetLoading = document.getElementById('sheet-loading');
+
+            fileInput.addEventListener('change', async () => {
+                if (!fileInput.files.length) return;
+
+                sheetPicker.classList.add('hidden');
+                sheetLoading.classList.remove('hidden');
+
+                const formData = new FormData();
+                formData.append('excel_file', fileInput.files[0]);
+                formData.append('_token', document.querySelector('input[name="_token"]').value);
+
+                try {
+                    const res = await fetch('{{ route('admin.assets.import-full.sheets') }}', {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    const data = await res.json();
+
+                    sheetList.innerHTML = data.sheets.map(name => `
+                        <label class="flex items-center gap-2 text-sm text-slate-700">
+                            <input type="checkbox" name="sheets[]" value="${name}" class="rounded border-slate-300 accent-orange-600">
+                            <span>${name}</span>
+                        </label>
+                    `).join('');
+
+                    sheetPicker.classList.remove('hidden');
+                } catch (e) {
+                    sheetList.innerHTML = '<p class="text-xs text-red-500">Gagal membaca daftar sheet, tapi tetap bisa diupload (semua sheet akan diproses otomatis).</p>';
+                    sheetPicker.classList.remove('hidden');
+                } finally {
+                    sheetLoading.classList.add('hidden');
+                }
+            });
+        </script>
 
     </div>
 
